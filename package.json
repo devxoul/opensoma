@@ -1,0 +1,56 @@
+{
+  "name": "opensoma",
+  "version": "0.1.0",
+  "description": "SWMaestro MyPage CLI & SDK for AI agents",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devxoul/opensoma.git"
+  },
+  "bin": {
+    "opensoma": "./src/cli.ts"
+  },
+  "type": "module",
+  "main": "dist/src/index.js",
+  "module": "dist/src/index.js",
+  "typesVersions": {
+    "*": {
+      ".": [
+        "./src/index.ts"
+      ]
+    }
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc && tsc-alias --resolve-full-paths",
+    "postbuild": "bun scripts/postbuild.ts",
+    "test": "bun scripts/test.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt --write .",
+    "prepublishOnly": "bun run build && bun scripts/prepublish.ts",
+    "postpublish": "git checkout package.json"
+  },
+  "dependencies": {
+    "better-sqlite3": "latest",
+    "commander": "latest",
+    "node-html-parser": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "latest",
+    "@types/bun": "latest",
+    "@types/node": "latest",
+    "oxfmt": "latest",
+    "oxlint": "latest",
+    "tsc-alias": "^1.8.16",
+    "typescript": "latest"
+  }
+}
