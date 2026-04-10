@@ -1,5 +1,6 @@
 'use client'
 
+import { CaretDown, Check } from '@phosphor-icons/react'
 import { Select as BaseSelect } from '@base-ui/react/select'
 import type { ComponentPropsWithoutRef, ReactNode } from 'react'
 
@@ -49,7 +50,7 @@ export function SelectTrigger({ className, placeholder, ...props }: SelectTrigge
     >
       <BaseSelect.Value placeholder={placeholder} />
       <BaseSelect.Icon className="ml-2 shrink-0 text-foreground-muted">
-        <ChevronDown />
+        <CaretDown size={12} />
       </BaseSelect.Icon>
     </BaseSelect.Trigger>
   )
@@ -98,7 +99,7 @@ export function SelectItem({ children, className, ...props }: SelectItemProps) {
     >
       <BaseSelect.ItemText>{children}</BaseSelect.ItemText>
       <BaseSelect.ItemIndicator className="text-current">
-        <CheckIcon />
+        <Check size={12} />
       </BaseSelect.ItemIndicator>
     </BaseSelect.Item>
   )
@@ -120,30 +121,4 @@ export function SelectGroup({ children, label, ...props }: SelectGroupProps) {
   )
 }
 
-function ChevronDown() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M3 4.5L6 7.5L9 4.5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
 
-function CheckIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M2.5 6L5 8.5L9.5 3.5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}

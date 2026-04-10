@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@base-ui/react": "latest",
+    "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/postcss": "latest",
     "clsx": "latest",
     "iron-session": "latest",

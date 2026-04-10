@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import './tokens/color-palette.css';
-@import './tokens/color-semantic.css';
+@import './tokens/color-semantic-light.css';
+@import './tokens/color-semantic-dark.css';
 
 @theme {
   --font-sans:

@@ -1,5 +1,6 @@
 'use client'
 
+import { Check } from '@phosphor-icons/react'
 import { Checkbox as BaseCheckbox } from '@base-ui/react/checkbox'
 import type { ComponentPropsWithoutRef, ReactNode } from 'react'
 
@@ -28,7 +29,7 @@ export function Checkbox({ children, className, labelClassName, onCheckedChange,
         {...props}
       >
         <BaseCheckbox.Indicator className="text-primary-foreground">
-          <CheckIcon />
+          <Check size={10} weight="bold" />
         </BaseCheckbox.Indicator>
       </BaseCheckbox.Root>
       {children ? <span>{children}</span> : null}
@@ -36,10 +37,4 @@ export function Checkbox({ children, className, labelClassName, onCheckedChange,
   )
 }
 
-function CheckIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M2 5L4 7L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
+

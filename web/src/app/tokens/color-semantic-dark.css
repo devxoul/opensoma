@@ -1,0 +1,38 @@
+:where(.dark) {
+  --color-background: var(--color-gray-950);
+  --color-foreground: var(--color-gray-50);
+  --color-foreground-muted: var(--color-gray-400);
+
+  --color-surface: var(--color-gray-900);
+  --color-surface-hover: var(--color-gray-800);
+  --color-muted: var(--color-gray-800);
+
+  --color-border: var(--color-gray-700);
+  --color-border-muted: var(--color-gray-800);
+  --color-ring: var(--color-blue-500);
+
+  --color-primary: var(--color-blue-500);
+  --color-primary-hover: var(--color-blue-600);
+  --color-primary-light: color-mix(in srgb, var(--color-blue-900) 40%, transparent);
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: var(--color-gray-800);
+  --color-secondary-hover: var(--color-gray-700);
+  --color-secondary-foreground: var(--color-gray-300);
+
+  --color-success: var(--color-green-500);
+  --color-success-muted: color-mix(in srgb, var(--color-green-500) 15%, transparent);
+  --color-success-foreground: var(--color-green-500);
+
+  --color-danger: var(--color-red-500);
+  --color-danger-muted: color-mix(in srgb, var(--color-red-500) 15%, transparent);
+  --color-danger-foreground: var(--color-red-500);
+
+  --color-warning: var(--color-yellow-500);
+  --color-warning-muted: color-mix(in srgb, var(--color-yellow-500) 15%, transparent);
+  --color-warning-foreground: var(--color-yellow-500);
+
+  --color-info: var(--color-blue-500);
+  --color-info-muted: color-mix(in srgb, var(--color-blue-500) 15%, transparent);
+  --color-info-foreground: var(--color-blue-500);
+}

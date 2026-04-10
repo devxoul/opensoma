@@ -2,6 +2,9 @@
 
 import * as React from 'react'
 
+import { Monitor, Moon, Sun } from '@phosphor-icons/react'
+
+import { useTheme } from '~/lib/theme'
 import { Badge } from '~/ui/badge'
 import { Button } from '~/ui/button'
 import { Card, CardHeader, CardContent } from '~/ui/card'
@@ -40,11 +43,30 @@ function ColorSwatch({ name, variable }: { name: string; variable: string }) {
 }
 
 export default function DesignSystemPage() {
+  const { theme, setTheme } = useTheme()
+
   return (
-    <div className="container mx-auto max-w-5xl space-y-8 py-12">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Design System</h1>
-        <p className="mt-2 text-foreground-muted">SW마에스트로 디자인 시스템</p>
+    <div className="container mx-auto max-w-5xl space-y-8 px-6 py-12">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Design System</h1>
+          <p className="mt-2 text-foreground-muted">SW마에스트로 디자인 시스템</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 rounded-lg bg-muted p-1">
+            {(['light', 'dark', 'system'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTheme(t)}
+                className={`rounded-md px-3 py-1 text-sm transition-colors cursor-pointer ${
+                  theme === t ? 'bg-surface text-foreground shadow-sm' : 'text-foreground-muted hover:text-foreground'
+                }`}
+              >
+                {t === 'light' ? <><Sun size={14} className="mr-1 inline" /> Light</> : t === 'dark' ? <><Moon size={14} className="mr-1 inline" /> Dark</> : <><Monitor size={14} className="mr-1 inline" /> System</>}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <Section title="Colors">
