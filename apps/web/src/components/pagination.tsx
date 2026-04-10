@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import type { Pagination as PaginationType } from '@/lib/sdk'
 import { Button } from '@/ui/button'
-import { cn } from '@/lib/cn'
 
 interface PaginationProps {
   pagination: PaginationType
@@ -36,47 +35,58 @@ export function Pagination({ pagination }: PaginationProps) {
         총 {pagination.total}건 · {pagination.currentPage} / {pagination.totalPages} 페이지
       </p>
       <div className="flex flex-wrap items-center gap-2">
-        <PageLink
+        <PageButton
           href={createPageURL(Math.max(1, pagination.currentPage - 1))}
           disabled={pagination.currentPage === 1}
         >
           이전
-        </PageLink>
+        </PageButton>
         {pages.map((page) => (
-          <PageLink
+          <PageButton
             key={page}
             href={createPageURL(page)}
-            isCurrent={page === pagination.currentPage}
-            disabled={page === pagination.currentPage}
+            isCurrent={page === Number(pagination.currentPage)}
           >
             {page}
-          </PageLink>
+          </PageButton>
         ))}
-        <PageLink
+        <PageButton
           href={createPageURL(Math.min(pagination.totalPages, pagination.currentPage + 1))}
           disabled={pagination.currentPage === pagination.totalPages}
         >
           다음
-        </PageLink>
+        </PageButton>
       </div>
     </div>
   )
 }
 
-interface PageLinkProps {
+interface PageButtonProps {
   children: React.ReactNode
   href: string
   isCurrent?: boolean
   disabled?: boolean
 }
 
-function PageLink({ children, href, isCurrent = false, disabled = false }: PageLinkProps) {
+function PageButton({ children, href, isCurrent = false, disabled = false }: PageButtonProps) {
+  if (isCurrent) {
+    return (
+      <Button
+        size="sm"
+        variant="primary"
+        className="cursor-default font-semibold"
+      >
+        {children}
+      </Button>
+    )
+  }
+
   if (disabled) {
     return (
       <Button
         disabled
         size="sm"
-        variant={isCurrent ? 'primary' : 'ghost'}
+        variant="ghost"
         className="font-semibold"
       >
         {children}
@@ -88,8 +98,8 @@ function PageLink({ children, href, isCurrent = false, disabled = false }: PageL
     <Link href={href} scroll={false}>
       <Button
         size="sm"
-        variant={isCurrent ? 'primary' : 'ghost'}
-        className={cn('font-semibold', !isCurrent && 'hover:bg-muted')}
+        variant="ghost"
+        className="font-semibold hover:bg-muted"
       >
         {children}
       </Button>
