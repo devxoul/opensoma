@@ -201,6 +201,7 @@ export class SomaClient {
           date: item.sessionDate,
           time: item.sessionTime.start,
           timeEnd: item.sessionTime.end,
+          type: item.type,
         }));
         return dashboard;
       },

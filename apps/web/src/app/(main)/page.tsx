@@ -25,14 +25,24 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <UserInfoCard name={dashboard.name} role={dashboard.role} organization={dashboard.organization} position={dashboard.position} />
+        <UserInfoCard name={dashboard.name} role={dashboard.role} position={dashboard.position} />
         <TeamInfoCard team={dashboard.team} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <MentoringCard items={dashboard.mentoringSessions} />
-        <RoomReservationCard items={dashboard.roomReservations} />
+        <MentoringCard
+          items={dashboard.mentoringSessions.filter((item) => item.type === "자유 멘토링")}
+          title="자유 멘토링"
+          icon={ChalkboardTeacher}
+        />
+        <MentoringCard
+          items={dashboard.mentoringSessions.filter((item) => item.type === "멘토 특강")}
+          title="멘토 특강"
+          icon={ChalkboardTeacher}
+        />
       </div>
+
+      <RoomReservationCard items={dashboard.roomReservations} />
     </div>
   )
 }
@@ -40,12 +50,10 @@ export default async function DashboardPage() {
 function UserInfoCard({
   name,
   role,
-  organization,
   position,
 }: {
   name: string
   role: string
-  organization: string
   position: string
 }) {
   return (
@@ -62,13 +70,10 @@ function UserInfoCard({
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-light">
               <span className="text-xl font-bold text-primary">{name.charAt(0)}</span>
             </div>
-            <div>
+            <div className="flex items-center gap-3">
               <div className="text-xl font-bold text-foreground">{name}</div>
-              <div className="flex items-center gap-2 text-sm text-foreground-muted">
-                <Badge variant="primary">{role}</Badge>
-                {organization && <span>· {organization}</span>}
-                {position && <span>· {position}</span>}
-              </div>
+              <Badge variant="primary">{role}</Badge>
+              {position && <span className="text-sm text-foreground-muted">· {position}</span>}
             </div>
           </div>
         </div>
@@ -125,18 +130,31 @@ function TeamInfoCard({
 
 function MentoringCard({
   items,
+  title,
+  icon: Icon,
 }: {
-  items: Array<{ title: string; url: string; status: string; date?: string; time?: string; timeEnd?: string; venue?: string }>
+  items: Array<{ title: string; url: string; status: string; date?: string; time?: string; timeEnd?: string; venue?: string; type?: "자유 멘토링" | "멘토 특강" }>
+  title: string
+  icon: typeof ChalkboardTeacher
 }) {
   const today = new Date().toISOString().slice(0, 10)
+  const totalHours = items.reduce((sum, item) => {
+    if (!item.time || !item.timeEnd) return sum
+    const start = parseTime(item.time)
+    const end = parseTime(item.timeEnd)
+    return sum + (end - start)
+  }, 0)
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ChalkboardTeacher size={20} weight="bold" className="text-primary" />
-            <h2 className="text-lg font-bold text-foreground">멘토링 / 특강</h2>
+            <Icon size={20} weight="bold" className="text-primary" />
+            <h2 className="text-lg font-bold text-foreground">{title}</h2>
+            {totalHours > 0 && (
+              <span className="text-sm text-foreground-muted">({totalHours}시간)</span>
+            )}
           </div>
           <Link href="/mentoring" className="text-sm text-primary hover:underline">
             전체 보기
@@ -145,7 +163,7 @@ function MentoringCard({
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
-          <EmptyState icon={ChalkboardTeacher} message="등록한 멘토링/특강이 없습니다." className="border-0 py-8" />
+          <EmptyState icon={Icon} message={`등록한 ${title}이 없습니다.`} className="border-0 py-8" />
         ) : (
           <div className="space-y-3">
             {items.map((item) => {
@@ -264,4 +282,9 @@ function toInternalHref(url: string) {
   }
 
   return '/'
+}
+
+function parseTime(timeStr: string): number {
+  const [hours, minutes] = timeStr.split(':').map(Number)
+  return hours + (minutes || 0) / 60
 }

@@ -11,6 +11,7 @@ const DashboardStatusItemSchema = z.object({
   time: z.string().optional(),
   timeEnd: z.string().optional(),
   venue: z.string().optional(),
+  type: z.enum(["자유 멘토링", "멘토 특강"]).optional(),
 });
 const TeamListItemSchema = z.object({
   name: z.string(),
