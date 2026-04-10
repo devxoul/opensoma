@@ -16,6 +16,38 @@ export const metadata: Metadata = {
   title: '멘토링/특강',
 }
 
+function isPastDate(dateStr: string): boolean {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const itemDate = new Date(dateStr.replace(/\./g, '-'))
+  return itemDate < today
+}
+
+function TypeBadge({ type }: { type: string }) {
+  if (type === '자유 멘토링') {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="inline-block size-2 rounded-full bg-emerald-500" />
+        <span className="text-sm">{type}</span>
+      </div>
+    )
+  }
+  if (type === '멘토 특강') {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="inline-block size-2 rounded-full bg-amber-500" />
+        <span className="text-sm">{type}</span>
+      </div>
+    )
+  }
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="inline-block size-2 rounded-full bg-foreground-muted" />
+      <span className="text-sm">{type}</span>
+    </div>
+  )
+}
+
 export default async function MentoringPage({
   searchParams,
 }: {
@@ -61,6 +93,7 @@ export default async function MentoringPage({
         <ResponsiveTable
           items={mentoring.items}
           keyExtractor={(item) => item.id}
+          rowClassName={(item) => isPastDate(item.sessionDate) ? 'opacity-50' : ''}
           columns={[
             {
               header: '유형',
@@ -80,7 +113,7 @@ export default async function MentoringPage({
               hideOnMobile: true,
               cell: (item) => (
                 <>
-                  <div>{item.sessionDate}</div>
+                  <div className={isPastDate(item.sessionDate) ? 'text-foreground-muted' : ''}>{item.sessionDate}</div>
                   <div className="text-xs text-foreground-muted">
                     {item.sessionTime.start} ~ {item.sessionTime.end}
                   </div>
@@ -110,29 +143,4 @@ export default async function MentoringPage({
 
 function getFirstValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value
-}
-
-function TypeBadge({ type }: { type: string }) {
-  if (type === '자유 멘토링') {
-    return (
-      <div className="flex items-center gap-1.5">
-        <span className="inline-block size-2 rounded-full bg-emerald-500" />
-        <span className="text-sm">{type}</span>
-      </div>
-    )
-  }
-  if (type === '멘토 특강') {
-    return (
-      <div className="flex items-center gap-1.5">
-        <span className="inline-block size-2 rounded-full bg-amber-500" />
-        <span className="text-sm">{type}</span>
-      </div>
-    )
-  }
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="inline-block size-2 rounded-full bg-foreground-muted" />
-      <span className="text-sm">{type}</span>
-    </div>
-  )
 }
