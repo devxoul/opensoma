@@ -1,9 +1,0 @@
-{
-  "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "printWidth": 120,
-  "useTabs": false,
-  "semi": false,
-  "singleQuote": true,
-  "sortImports": {},
-  "ignorePatterns": ["dist/**", ".github/**", "**/*.md"]
-}
