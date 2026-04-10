@@ -1,9 +1,11 @@
+import { ChalkboardTeacher } from '@phosphor-icons/react/dist/ssr'
+
 import { Pagination } from '~/components/pagination'
 import { StatusBadge } from '~/components/status-badge'
 import { requireAuth } from '~/lib/auth'
 import { Card, CardContent } from '~/ui/card'
 import { EmptyState } from '~/ui/empty-state'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/ui/table'
+import { ResponsiveTable } from '~/ui/responsive-table'
 
 export default async function MentoringHistoryPage({
   searchParams,
@@ -25,40 +27,45 @@ export default async function MentoringHistoryPage({
       {history.items.length === 0 ? (
         <Card className="border border-border">
           <CardContent>
-            <EmptyState message="신청 내역이 없습니다." />
+            <EmptyState icon={ChalkboardTeacher} message="신청 내역이 없습니다." />
           </CardContent>
         </Card>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>구분</TableHead>
-              <TableHead>제목</TableHead>
-              <TableHead>작성자</TableHead>
-              <TableHead>강의날짜</TableHead>
-              <TableHead>접수일</TableHead>
-              <TableHead>접수상태</TableHead>
-              <TableHead>개설승인</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {history.items.map((item) => (
-              <TableRow key={`${item.id}-${item.title}`}>
-                <TableCell>{item.category}</TableCell>
-                <TableCell>{item.title}</TableCell>
-                <TableCell>{item.author}</TableCell>
-                <TableCell>{item.sessionDate}</TableCell>
-                <TableCell>{item.appliedAt}</TableCell>
-                <TableCell>
-                  <StatusBadge status={item.applicationStatus} />
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={item.approvalStatus} />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <ResponsiveTable
+          items={history.items}
+          keyExtractor={(item) => `${item.id}-${item.title}`}
+          columns={[
+            {
+              header: '구분',
+              cell: (item) => item.category,
+            },
+            {
+              header: '제목',
+              cell: (item) => item.title,
+            },
+            {
+              header: '작성자',
+              cell: (item) => item.author,
+            },
+            {
+              header: '강의날짜',
+              cell: (item) => item.sessionDate,
+            },
+            {
+              header: '접수일',
+              hideOnMobile: true,
+              cell: (item) => item.appliedAt,
+            },
+            {
+              header: '접수상태',
+              cell: (item) => <StatusBadge status={item.applicationStatus} />,
+            },
+            {
+              header: '개설승인',
+              cell: (item) => <StatusBadge status={item.approvalStatus} />,
+            },
+          ]}
+        />
       )}
 
       <Pagination pagination={history.pagination} pathname="/mentoring/history" searchParams={{}} />

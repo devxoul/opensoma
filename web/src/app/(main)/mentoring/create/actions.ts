@@ -35,7 +35,7 @@ export async function createMentoring(
     const client = await createClient()
     await client.mentoring.create({
       title,
-      type: type === 'lecture' ? 'lecture' : 'free',
+      type: type === 'lecture' ? 'lecture' : 'public',
       date,
       startTime,
       endTime,

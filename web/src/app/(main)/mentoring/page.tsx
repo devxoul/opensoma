@@ -1,3 +1,4 @@
+import { ChalkboardTeacher } from '@phosphor-icons/react/dist/ssr'
 import Link from 'next/link'
 
 import { MentoringFilters } from '~/app/(main)/mentoring/components/mentoring-filters'
@@ -7,7 +8,7 @@ import { requireAuth } from '~/lib/auth'
 import { Button } from '~/ui/button'
 import { Card, CardContent } from '~/ui/card'
 import { EmptyState } from '~/ui/empty-state'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/ui/table'
+import { ResponsiveTable } from '~/ui/responsive-table'
 
 export default async function MentoringPage({
   searchParams,
@@ -45,51 +46,58 @@ export default async function MentoringPage({
       {mentoring.items.length === 0 ? (
         <Card className="border border-border">
           <CardContent>
-            <EmptyState message="조건에 맞는 멘토링이 없습니다." />
+            <EmptyState icon={ChalkboardTeacher} message="조건에 맞는 멘토링이 없습니다." />
           </CardContent>
         </Card>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>유형</TableHead>
-              <TableHead className="w-[32%]">제목</TableHead>
-              <TableHead>접수 기간</TableHead>
-              <TableHead>진행 일시</TableHead>
-              <TableHead>인원</TableHead>
-              <TableHead>상태</TableHead>
-              <TableHead>작성자</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {mentoring.items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>{item.type}</TableCell>
-                <TableCell>
-                  <Link className="font-medium text-foreground hover:text-primary" href={`/mentoring/${item.id}`}>
-                    {item.title}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  {item.registrationPeriod.start} ~ {item.registrationPeriod.end}
-                </TableCell>
-                <TableCell>
+        <ResponsiveTable
+          items={mentoring.items}
+          keyExtractor={(item) => item.id}
+          columns={[
+            {
+              header: '유형',
+              cell: (item) => item.type,
+            },
+            {
+              header: '제목',
+              className: 'w-[32%]',
+              cell: (item) => (
+                <Link className="font-medium text-foreground hover:text-primary" href={`/mentoring/${item.id}`}>
+                  {item.title}
+                </Link>
+              ),
+            },
+            {
+              header: '접수 기간',
+              hideOnMobile: true,
+              cell: (item) => `${item.registrationPeriod.start} ~ ${item.registrationPeriod.end}`,
+            },
+            {
+              header: '진행 일시',
+              hideOnMobile: true,
+              cell: (item) => (
+                <>
                   <div>{item.sessionDate}</div>
                   <div className="text-xs text-foreground-muted">
                     {item.sessionTime.start} ~ {item.sessionTime.end}
                   </div>
-                </TableCell>
-                <TableCell>
-                  {item.attendees.current} / {item.attendees.max}
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={item.status} />
-                </TableCell>
-                <TableCell>{item.author}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                </>
+              ),
+            },
+            {
+              header: '인원',
+              cell: (item) => `${item.attendees.current} / ${item.attendees.max}`,
+            },
+            {
+              header: '상태',
+              cell: (item) => <StatusBadge status={item.status} />,
+            },
+            {
+              header: '작성자',
+              cell: (item) => item.author,
+            },
+          ]}
+        />
       )}
 
       <Pagination pagination={mentoring.pagination} pathname="/mentoring" searchParams={{ status, type }} />

@@ -1,10 +1,11 @@
+import { Megaphone } from '@phosphor-icons/react/dist/ssr'
 import Link from 'next/link'
 
 import { Pagination } from '~/components/pagination'
 import { requireAuth } from '~/lib/auth'
-import { Card, CardContent, CardHeader } from '~/ui/card'
+import { Card, CardContent } from '~/ui/card'
 import { EmptyState } from '~/ui/empty-state'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/ui/table'
+import { ResponsiveTable } from '~/ui/responsive-table'
 
 export default async function NoticePage({
   searchParams,
@@ -26,32 +27,33 @@ export default async function NoticePage({
       {notices.items.length === 0 ? (
         <Card className="border border-border">
           <CardContent>
-            <EmptyState message="등록된 공지사항이 없습니다." />
+            <EmptyState icon={Megaphone} message="등록된 공지사항이 없습니다." />
           </CardContent>
         </Card>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[60%]">제목</TableHead>
-              <TableHead>작성자</TableHead>
-              <TableHead>등록일</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {notices.items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>
-                  <Link className="font-medium text-foreground hover:text-primary" href={`/notice/${item.id}`}>
-                    {item.title}
-                  </Link>
-                </TableCell>
-                <TableCell>{item.author}</TableCell>
-                <TableCell>{item.createdAt}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <ResponsiveTable
+          items={notices.items}
+          keyExtractor={(item) => item.id}
+          columns={[
+            {
+              header: '제목',
+              className: 'w-[60%]',
+              cell: (item) => (
+                <Link className="font-medium text-foreground hover:text-primary" href={`/notice/${item.id}`}>
+                  {item.title}
+                </Link>
+              ),
+            },
+            {
+              header: '작성자',
+              cell: (item) => item.author,
+            },
+            {
+              header: '등록일',
+              cell: (item) => item.createdAt,
+            },
+          ]}
+        />
       )}
 
       <Pagination pagination={notices.pagination} pathname="/notice" searchParams={{}} />

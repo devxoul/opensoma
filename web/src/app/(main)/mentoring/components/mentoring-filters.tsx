@@ -24,7 +24,7 @@ export function MentoringFilters() {
   const currentType = searchParams.get('type') ?? ''
 
   return (
-    <div className="space-y-4 rounded-lg border border-border bg-surface p-4 shadow-sm">
+    <div className="space-y-4 rounded-lg border border-border bg-surface p-4">
       <FilterGroup
         currentValue={currentStatus}
         items={statusFilters}

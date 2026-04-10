@@ -1,3 +1,4 @@
+import { Newspaper } from '@phosphor-icons/react/dist/ssr'
 import Link from 'next/link'
 
 import { Pagination } from '~/components/pagination'
@@ -5,7 +6,7 @@ import { StatusBadge } from '~/components/status-badge'
 import { requireAuth } from '~/lib/auth'
 import { Card, CardContent } from '~/ui/card'
 import { EmptyState } from '~/ui/empty-state'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/ui/table'
+import { ResponsiveTable } from '~/ui/responsive-table'
 
 export default async function EventPage({
   searchParams,
@@ -27,44 +28,48 @@ export default async function EventPage({
       {events.items.length === 0 ? (
         <Card className="border border-border">
           <CardContent>
-            <EmptyState message="등록된 행사가 없습니다." />
+            <EmptyState icon={Newspaper} message="등록된 행사가 없습니다." />
           </CardContent>
         </Card>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>구분</TableHead>
-              <TableHead className="w-[28%]">제목</TableHead>
-              <TableHead>접수 기간</TableHead>
-              <TableHead>행사 기간</TableHead>
-              <TableHead>상태</TableHead>
-              <TableHead>등록일</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {events.items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>{item.category}</TableCell>
-                <TableCell>
-                  <Link className="font-medium text-foreground hover:text-primary" href={`/event/${item.id}`}>
-                    {item.title}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  {item.registrationPeriod.start} ~ {item.registrationPeriod.end}
-                </TableCell>
-                <TableCell>
-                  {item.eventPeriod.start} ~ {item.eventPeriod.end}
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={item.status} />
-                </TableCell>
-                <TableCell>{item.createdAt}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <ResponsiveTable
+          items={events.items}
+          keyExtractor={(item) => item.id}
+          columns={[
+            {
+              header: '구분',
+              cell: (item) => item.category,
+            },
+            {
+              header: '제목',
+              className: 'w-[28%]',
+              cell: (item) => (
+                <Link className="font-medium text-foreground hover:text-primary" href={`/event/${item.id}`}>
+                  {item.title}
+                </Link>
+              ),
+            },
+            {
+              header: '접수 기간',
+              hideOnMobile: true,
+              cell: (item) => `${item.registrationPeriod.start} ~ ${item.registrationPeriod.end}`,
+            },
+            {
+              header: '행사 기간',
+              hideOnMobile: true,
+              cell: (item) => `${item.eventPeriod.start} ~ ${item.eventPeriod.end}`,
+            },
+            {
+              header: '상태',
+              cell: (item) => <StatusBadge status={item.status} />,
+            },
+            {
+              header: '등록일',
+              hideOnMobile: true,
+              cell: (item) => item.createdAt,
+            },
+          ]}
+        />
       )}
 
       <Pagination pagination={events.pagination} pathname="/event" searchParams={{}} />
