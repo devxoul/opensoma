@@ -24,7 +24,7 @@ export function MentoringFilters() {
   const currentType = searchParams.get('type') ?? ''
 
   return (
-    <div className="space-y-4 rounded-lg border border-border bg-surface p-4">
+    <div className="flex flex-wrap items-center gap-6 rounded-lg border border-border bg-surface p-4">
       <FilterGroup
         currentValue={currentStatus}
         items={statusFilters}
@@ -55,9 +55,9 @@ function FilterGroup({
   onSelect: (value: string) => void
 }) {
   return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium text-foreground">{label}</p>
-      <div className="flex flex-wrap gap-2">
+    <div className="flex items-center gap-2">
+      <p className="shrink-0 text-sm font-medium text-foreground">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
         {items.map((item) => (
           <Button
             key={`${label}-${item.value}`}
