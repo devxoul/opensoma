@@ -63,7 +63,7 @@ export function parseMentoringDetail(html: string, id = 0): MentoringDetail {
     sessionDate: extractFirstDate(dateText),
     sessionTime: extractTimeRange(dateText),
     attendees: {
-      current: extractNumber(labels['신청인원'] || labels['현재인원'] || ''),
+      current: extractNumber(labels['신청인원'] || labels['현재인원'] || cleanText(root.querySelector('.total-normal')) || ''),
       max: extractNumber(labels['모집인원'] || labels['수강인원'] || ''),
     },
     approved: /OK/i.test(labels['개설 승인'] || labels['개설승인'] || ''),
