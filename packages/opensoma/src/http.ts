@@ -108,10 +108,10 @@ export class SomaHttp {
     // SWMaestro returns an intermediate form that auto-submits via JS:
     //   <form action="/sw/login.do"><input name="password" value="bcrypt_hash"/>...
     // We need to parse and submit this form to complete authentication.
-    const actionMatch = html.match(/action='([^']+)'/);
+    const actionMatch = html.match(/action=["']([^"']+)["']/);
     const fields: Record<string, string> = {};
 
-    for (const match of html.matchAll(/name='([^']+)'\s+value='([^']*)'/g)) {
+    for (const match of html.matchAll(/name=["']([^"']+)["']\s+value=["']([^"]*)["']/g)) {
       fields[match[1]] = match[2];
     }
 
