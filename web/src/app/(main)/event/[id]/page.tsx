@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 
+import { Breadcrumb } from '~/components/breadcrumb'
 import { HtmlContent } from '~/components/html-content'
 import { requireAuth } from '~/lib/auth'
 import { Card, CardContent, CardHeader } from '~/ui/card'
@@ -23,27 +24,35 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const detail = normalizeEventDetail(await client.event.get(eventId))
 
   return (
-    <Card className="border border-border">
-      <CardHeader>
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-foreground">{detail.title || '행사 상세'}</h1>
-          <p className="text-sm text-foreground-muted">행사 상세 정보를 확인하세요.</p>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <dl className="grid gap-4 md:grid-cols-2">
-          {Object.entries(detail.fields)
-            .filter(([key]) => !['제목', 'content', 'NO', '번호'].includes(key))
-            .map(([key, value]) => (
-              <div key={key} className="rounded-md bg-muted p-4">
-                <dt className="text-sm text-foreground-muted">{key}</dt>
-                <dd className="mt-1 text-sm font-medium text-foreground">{String(value || '-')}</dd>
-              </div>
-            ))}
-        </dl>
-        <HtmlContent content={detail.content} />
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      <Breadcrumb
+        items={[
+          { label: '행사 게시판', href: '/event' },
+          { label: detail.title || '행사 상세' },
+        ]}
+      />
+      <Card>
+        <CardHeader>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-foreground">{detail.title || '행사 상세'}</h1>
+            <p className="text-sm text-foreground-muted">행사 상세 정보를 확인하세요.</p>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          <dl className="grid gap-4 md:grid-cols-2">
+            {Object.entries(detail.fields)
+              .filter(([key]) => !['제목', 'content', 'NO', '번호'].includes(key))
+              .map(([key, value]) => (
+                <div key={key} className="rounded-lg bg-muted p-4">
+                  <dt className="text-sm text-foreground-muted">{key}</dt>
+                  <dd className="mt-1 text-sm font-medium text-foreground">{String(value || '-')}</dd>
+                </div>
+              ))}
+          </dl>
+          <HtmlContent content={detail.content} />
+        </CardContent>
+      </Card>
+    </div>
   )
 }
 
