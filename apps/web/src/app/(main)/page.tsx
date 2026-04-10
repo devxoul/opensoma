@@ -1,11 +1,13 @@
-import { CalendarBlank, Users } from '@phosphor-icons/react/dist/ssr'
+import { Buildings, CalendarBlank, ChalkboardTeacher, Clock, MapPin, Users } from '@phosphor-icons/react/dist/ssr'
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
+import { StatusBadge } from '@/components/status-badge'
 import { requireAuth } from '@/lib/auth'
-import { cn } from '@/lib/cn'
 import { Badge } from '@/ui/badge'
 import { Card, CardContent, CardHeader } from '@/ui/card'
 import { EmptyState } from '@/ui/empty-state'
+import { ResponsiveTable } from '@/ui/responsive-table'
 
 export const metadata: Metadata = {
   title: '대시보드',
@@ -22,120 +24,238 @@ export default async function DashboardPage() {
         <p className="text-sm text-foreground-muted">마이페이지 주요 정보를 한눈에 확인하세요.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="멘토링" value={String(dashboard.mentoringSessions.length)} />
-        <StatCard label="회의실 예약" value={String(dashboard.roomReservations.length)} />
-        <StatCard label="역할" value={dashboard.role} />
-        <StatCard label="팀" value={dashboard.team?.name ?? '-'} />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <UserInfoCard name={dashboard.name} role={dashboard.role} organization={dashboard.organization} position={dashboard.position} />
+        <TeamInfoCard team={dashboard.team} />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <div className="space-y-1">
-              <h2 className="text-xl font-bold text-foreground">사용자 정보</h2>
-              <p className="text-sm text-foreground-muted">현재 로그인한 계정 정보입니다.</p>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid gap-3 sm:grid-cols-2">
-              <InfoItem label="이름" value={dashboard.name} />
-              <InfoItem label="역할" value={dashboard.role} />
-              <InfoItem label="소속" value={dashboard.organization || '-'} />
-              <InfoItem label="직책" value={dashboard.position || '-'} />
-            </dl>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="space-y-1">
-              <h2 className="text-xl font-bold text-foreground">팀 정보</h2>
-              <p className="text-sm text-foreground-muted">현재 매칭된 팀 현황입니다.</p>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {dashboard.team ? (
-              <dl className="grid gap-3 sm:grid-cols-2">
-                <InfoItem label="팀명" value={dashboard.team.name} />
-                <InfoItem label="멘토" value={dashboard.team.mentor} />
-                <InfoItem className="sm:col-span-2" label="팀원" value={dashboard.team.members} />
-              </dl>
-            ) : (
-              <EmptyState icon={Users} message="현재 배정된 팀 정보가 없습니다." />
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <StatusCard
-          description="진행 중인 멘토링과 특강 상태입니다."
-          items={dashboard.mentoringSessions}
-          title="멘토링 / 특강"
-        />
-        <StatusCard description="예약한 회의실 현황입니다." items={dashboard.roomReservations} title="회의실 예약" />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <MentoringCard items={dashboard.mentoringSessions} />
+        <RoomReservationCard items={dashboard.roomReservations} />
       </div>
     </div>
   )
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-surface p-4">
-      <div className="text-2xl font-bold text-foreground">{value}</div>
-      <div className="mt-1 text-xs text-foreground-muted">{label}</div>
-    </div>
-  )
-}
-
-function StatusCard({
-  title,
-  description,
-  items,
+function UserInfoCard({
+  name,
+  role,
+  organization,
+  position,
 }: {
-  title: string
-  description: string
-  items: Array<{ title: string; url: string; status: string }>
+  name: string
+  role: string
+  organization: string
+  position: string
+}) {
+  return (
+    <Card className="lg:col-span-2">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Users size={20} weight="bold" className="text-primary" />
+          <h2 className="text-lg font-bold text-foreground">사용자 정보</h2>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-light">
+              <span className="text-xl font-bold text-primary">{name.charAt(0)}</span>
+            </div>
+            <div>
+              <div className="text-xl font-bold text-foreground">{name}</div>
+              <div className="flex items-center gap-2 text-sm text-foreground-muted">
+                <Badge variant="primary">{role}</Badge>
+                {organization && <span>· {organization}</span>}
+                {position && <span>· {position}</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function TeamInfoCard({
+  team,
+}: {
+  team?: { name: string; members: string; mentor: string }
 }) {
   return (
     <Card>
       <CardHeader>
-        <div className="space-y-1">
-          <h2 className="text-xl font-bold text-foreground">{title}</h2>
-          <p className="text-sm text-foreground-muted">{description}</p>
+        <div className="flex items-center gap-2">
+          <Buildings size={20} weight="bold" className="text-primary" />
+          <h2 className="text-lg font-bold text-foreground">팀 정보</h2>
         </div>
       </CardHeader>
       <CardContent>
-        {items.length === 0 ? (
-          <EmptyState icon={CalendarBlank} message="표시할 내역이 없습니다." />
+        {team ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-foreground-muted">팀명</span>
+              <span className="font-semibold text-foreground">{team.name}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-foreground-muted">멘토</span>
+              <span className="font-semibold text-foreground">{team.mentor}</span>
+            </div>
+            <div className="space-y-2">
+              <span className="text-sm text-foreground-muted">팀원</span>
+              <div className="flex flex-wrap gap-2">
+                {team.members.split(',').map((member) => {
+                  const trimmed = member.trim()
+                  return (
+                    <Badge key={trimmed} variant="default">
+                      {trimmed}
+                    </Badge>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
         ) : (
-          <ul className="space-y-3">
-            {items.map((item) => (
-              <li
-                key={`${item.url}-${item.title}`}
-                className="flex items-center justify-between gap-4 rounded-lg bg-muted/50 p-4 transition-colors duration-150 hover:bg-surface-hover"
-              >
-                <a className="text-sm font-semibold text-foreground hover:text-primary" href={toInternalHref(item.url)}>
-                  {item.title}
-                </a>
-                <Badge variant={item.status.includes('완료') ? 'success' : 'primary'}>{item.status}</Badge>
-              </li>
-            ))}
-          </ul>
+          <EmptyState icon={Users} message="현재 배정된 팀 정보가 없습니다." className="border-0 py-8" />
         )}
       </CardContent>
     </Card>
   )
 }
 
-function InfoItem({ label, value, className }: { label: string; value: string; className?: string }) {
+function MentoringCard({
+  items,
+}: {
+  items: Array<{ title: string; url: string; status: string }>
+}) {
   return (
-    <div className={cn('rounded-lg bg-muted/50 p-3', className)}>
-      <dt className="text-sm text-foreground-muted">{label}</dt>
-      <dd className="mt-1 text-sm font-medium text-foreground">{value}</dd>
-    </div>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ChalkboardTeacher size={20} weight="bold" className="text-primary" />
+            <h2 className="text-lg font-bold text-foreground">멘토링 / 특강</h2>
+          </div>
+          <Link href="/mentoring" className="text-sm text-primary hover:underline">
+            전체 보기
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {items.length === 0 ? (
+          <EmptyState icon={ChalkboardTeacher} message="등록한 멘토링/특강이 없습니다." className="border-0 py-8" />
+        ) : (
+          <ResponsiveTable
+            items={items}
+            keyExtractor={(item) => `${item.url}-${item.title}`}
+            columns={[
+              {
+                header: '제목',
+                className: 'w-[60%]',
+                cell: (item) => (
+                  <Link
+                    href={toInternalHref(item.url)}
+                    className="font-medium text-foreground hover:text-primary"
+                  >
+                    {item.title}
+                  </Link>
+                ),
+              },
+              {
+                header: '상태',
+                cell: (item) => <StatusBadge status={item.status} />,
+              },
+            ]}
+          />
+        )}
+      </CardContent>
+    </Card>
   )
+}
+
+function RoomReservationCard({
+  items,
+}: {
+  items: Array<{ title: string; url: string; status: string }>
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CalendarBlank size={20} weight="bold" className="text-primary" />
+            <h2 className="text-lg font-bold text-foreground">회의실 예약</h2>
+          </div>
+          <Link href="/room" className="text-sm text-primary hover:underline">
+            예약하기
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {items.length === 0 ? (
+          <EmptyState icon={CalendarBlank} message="예약한 회의실이 없습니다." className="border-0 py-8" />
+        ) : (
+          <div className="space-y-3">
+            {items.map((item) => {
+              const parsed = parseRoomInfo(item.title)
+              return (
+                <div
+                  key={`${item.url}-${item.title}`}
+                  className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-4 transition-colors hover:bg-muted/50"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <Link
+                      href={toInternalHref(item.url)}
+                      className="font-medium text-foreground hover:text-primary"
+                    >
+                      {parsed.roomName}
+                    </Link>
+                    <Badge variant={item.status.includes('완료') ? 'success' : 'primary'}>
+                      {item.status}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground-muted">
+                    {parsed.date && (
+                      <div className="flex items-center gap-1">
+                        <CalendarBlank size={14} />
+                        <span>{parsed.date}</span>
+                      </div>
+                    )}
+                    {parsed.time && (
+                      <div className="flex items-center gap-1">
+                        <Clock size={14} />
+                        <span>{parsed.time}</span>
+                      </div>
+                    )}
+                    {parsed.purpose && (
+                      <div className="flex items-center gap-1">
+                        <MapPin size={14} />
+                        <span>{parsed.purpose}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function parseRoomInfo(title: string) {
+  const roomMatch = title.match(/스페이스\s*([A-Z]\d+)/i)
+  const dateMatch = title.match(/(\d{4}-\d{2}-\d{2})/)
+  const timeMatch = title.match(/(\d{2}:\d{2})/g)
+  const purposeMatch = title.match(/[:-]\s*(.+)$/) || title.match(/」\s*(.+)$/)
+
+  return {
+    roomName: roomMatch ? `스페이스 ${roomMatch[1]}` : title,
+    date: dateMatch ? dateMatch[1] : null,
+    time: timeMatch && timeMatch.length >= 2 ? `${timeMatch[0]} ~ ${timeMatch[timeMatch.length - 1]}` : timeMatch ? timeMatch[0] : null,
+    purpose: purposeMatch ? purposeMatch[1].trim() : null,
+  }
 }
 
 function toInternalHref(url: string) {

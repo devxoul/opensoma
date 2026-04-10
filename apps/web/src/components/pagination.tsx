@@ -41,15 +41,19 @@ export function Pagination({ pagination }: PaginationProps) {
         >
           이전
         </PageButton>
-        {pages.map((page) => (
-          <PageButton
-            key={page}
-            href={createPageURL(page)}
-            isCurrent={page === Number(pagination.currentPage)}
-          >
-            {page}
-          </PageButton>
-        ))}
+        {pages.map((page) => {
+          const currentPageNum = Number(pagination.currentPage)
+          const isCurrent = page === currentPageNum
+          return (
+            <PageButton
+              key={`${page}-${currentPageNum}`}
+              href={createPageURL(page)}
+              isCurrent={isCurrent}
+            >
+              {page}
+            </PageButton>
+          )
+        })}
         <PageButton
           href={createPageURL(Math.min(pagination.totalPages, pagination.currentPage + 1))}
           disabled={pagination.currentPage === pagination.totalPages}
