@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { Breadcrumb } from '~/components/breadcrumb'
@@ -7,7 +8,28 @@ import { requireAuth } from '~/lib/auth'
 import { Card, CardContent, CardHeader } from '~/ui/card'
 import { Separator } from '~/ui/separator'
 
-export default async function MentoringDetailPage({ params }: { params: Promise<{ id: string }> }) {
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params
+  const mentoringId = Number(id)
+
+  if (Number.isNaN(mentoringId)) {
+    return { title: '멘토링 상세' }
+  }
+
+  try {
+    const client = await requireAuth()
+    const mentoring = await client.mentoring.get(mentoringId)
+    return { title: mentoring.title }
+  } catch {
+    return { title: '멘토링 상세' }
+  }
+}
+
+export default async function MentoringDetailPage({ params }: PageProps) {
   const { id } = await params
   const mentoringId = Number(id)
 

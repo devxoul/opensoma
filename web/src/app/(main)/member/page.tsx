@@ -1,5 +1,11 @@
+import type { Metadata } from 'next'
+
 import { requireAuth } from '~/lib/auth'
 import { Card, CardContent, CardHeader } from '~/ui/card'
+
+export const metadata: Metadata = {
+  title: '회원정보',
+}
 
 export default async function MemberPage() {
   const client = await requireAuth()

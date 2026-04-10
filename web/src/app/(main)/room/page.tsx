@@ -1,6 +1,12 @@
+import type { Metadata } from 'next'
+
 import { RoomCardList } from '~/app/(main)/room/components/room-card-list'
 import { RoomFilters } from '~/app/(main)/room/components/room-filters'
 import { requireAuth } from '~/lib/auth'
+
+export const metadata: Metadata = {
+  title: '회의실 예약',
+}
 
 export default async function RoomPage({
   searchParams,

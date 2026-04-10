@@ -5,7 +5,10 @@ import { ThemeProvider } from '~/lib/theme'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'SW마에스트로',
+  title: {
+    template: '%s | SW마에스트로',
+    default: 'SW마에스트로',
+  },
   description: 'SWMaestro MyPage',
 }
 

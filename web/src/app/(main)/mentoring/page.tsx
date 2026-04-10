@@ -1,3 +1,5 @@
+import type { Metadata } from 'next'
+
 import { ChalkboardTeacher } from '@phosphor-icons/react/dist/ssr'
 import Link from 'next/link'
 
@@ -9,6 +11,10 @@ import { Button } from '~/ui/button'
 import { Card, CardContent } from '~/ui/card'
 import { EmptyState } from '~/ui/empty-state'
 import { ResponsiveTable } from '~/ui/responsive-table'
+
+export const metadata: Metadata = {
+  title: '멘토링 / 특강 게시판',
+}
 
 export default async function MentoringPage({
   searchParams,

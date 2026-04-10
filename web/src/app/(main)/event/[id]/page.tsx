@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { Breadcrumb } from '~/components/breadcrumb'
@@ -12,7 +13,31 @@ interface EventDetail {
   fields: Record<string, unknown>
 }
 
-export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params
+  const eventId = Number(id)
+
+  if (Number.isNaN(eventId)) {
+    return { title: '행사 상세' }
+  }
+
+  try {
+    const client = await requireAuth()
+    const detail = await client.event.get(eventId)
+    if (typeof detail === 'object' && detail !== null && 'title' in detail) {
+      return { title: String((detail as Record<string, unknown>).title ?? '행사 상세') }
+    }
+    return { title: '행사 상세' }
+  } catch {
+    return { title: '행사 상세' }
+  }
+}
+
+export default async function EventDetailPage({ params }: PageProps) {
   const { id } = await params
   const eventId = Number(id)
 

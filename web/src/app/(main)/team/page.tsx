@@ -1,6 +1,12 @@
+import type { Metadata } from 'next'
+
 import { requireAuth } from '~/lib/auth'
 import { Badge } from '~/ui/badge'
 import { Card, CardContent, CardHeader } from '~/ui/card'
+
+export const metadata: Metadata = {
+  title: '팀매칭',
+}
 
 export default async function TeamPage() {
   const client = await requireAuth()

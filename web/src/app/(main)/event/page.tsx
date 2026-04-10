@@ -1,3 +1,5 @@
+import type { Metadata } from 'next'
+
 import { Newspaper } from '@phosphor-icons/react/dist/ssr'
 import Link from 'next/link'
 
@@ -7,6 +9,10 @@ import { requireAuth } from '~/lib/auth'
 import { Card, CardContent } from '~/ui/card'
 import { EmptyState } from '~/ui/empty-state'
 import { ResponsiveTable } from '~/ui/responsive-table'
+
+export const metadata: Metadata = {
+  title: '행사 게시판',
+}
 
 export default async function EventPage({
   searchParams,

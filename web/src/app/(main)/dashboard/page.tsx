@@ -1,3 +1,5 @@
+import type { Metadata } from 'next'
+
 import { CalendarBlank, Users } from '@phosphor-icons/react/dist/ssr'
 
 import { cn } from '~/lib/cn'
@@ -5,6 +7,10 @@ import { requireAuth } from '~/lib/auth'
 import { Badge } from '~/ui/badge'
 import { Card, CardContent, CardHeader } from '~/ui/card'
 import { EmptyState } from '~/ui/empty-state'
+
+export const metadata: Metadata = {
+  title: '대시보드',
+}
 
 export default async function DashboardPage() {
   const client = await requireAuth()
