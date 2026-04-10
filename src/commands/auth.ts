@@ -85,7 +85,7 @@ async function statusAction(options: StatusOptions): Promise<void> {
 
 async function extractAction(options: ExtractOptions): Promise<void> {
   try {
-    const modulePath = '@/token-extractor'
+    const modulePath = '../token-extractor'
     const imported = (await import(modulePath)) as {
       TokenExtractor: new () => { extract: () => Promise<{ sessionCookie: string } | null> }
     }
