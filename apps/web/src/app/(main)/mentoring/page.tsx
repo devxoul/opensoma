@@ -76,11 +76,6 @@ export default async function MentoringPage({
               ),
             },
             {
-              header: '접수 기간',
-              hideOnMobile: true,
-              cell: (item) => `${item.registrationPeriod.start} ~ ${item.registrationPeriod.end}`,
-            },
-            {
               header: '진행 일시',
               hideOnMobile: true,
               cell: (item) => (
