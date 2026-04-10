@@ -1,6 +1,6 @@
 ---
 name: opensoma
-description: Interact with SWMaestro MyPage - manage mentoring sessions, reserve meeting rooms, view dashboard, team info, notices, and member profiles
+description: Interact with SWMaestro MyPage - manage mentoring sessions, reserve meeting rooms, view dashboard, team info, notices, and member profiles. Use this skill when the user mentions https://www.swmaestro.ai/sw/mypage/, swmaestro.ai, SWMaestro, swm, SWMaestro MyPage, mentoring sessions, meeting room reservations at SWMaestro, or any SWMaestro-related tasks.
 version: 0.1.3
 allowed-tools: Bash(opensoma:*)
 metadata:
