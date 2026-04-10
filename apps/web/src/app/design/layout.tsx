@@ -18,6 +18,13 @@ import {
   ArrowBendUpLeft,
   PaintBucket,
   Clock,
+  ToggleLeft,
+  CaretCircleDown,
+  DotsThree,
+  DeviceMobile,
+  LineSegments,
+  Textbox,
+  ListDashes,
 } from '@phosphor-icons/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -39,11 +46,18 @@ const components = [
   { path: '/design/breadcrumb', label: 'Breadcrumb', icon: ArrowBendUpLeft },
   { path: '/design/buttons', label: 'Button', icon: CursorClick },
   { path: '/design/cards', label: 'Card', icon: Cards },
+  { path: '/design/collapsible', label: 'Collapsible', icon: CaretCircleDown },
   { path: '/design/empty-state', label: 'Empty State', icon: Minus },
   { path: '/design/empty-states', label: 'Empty States', icon: SquaresFour },
   { path: '/design/forms', label: 'Form', icon: CheckSquare },
+  { path: '/design/input', label: 'Input', icon: Textbox },
   { path: '/design/interactive-card', label: 'Interactive Card', icon: Cursor },
+  { path: '/design/menu', label: 'Menu', icon: DotsThree },
+  { path: '/design/responsive-table', label: 'Responsive Table', icon: DeviceMobile },
+  { path: '/design/select', label: 'Select', icon: ListDashes },
+  { path: '/design/separator', label: 'Separator', icon: LineSegments },
   { path: '/design/tables', label: 'Table', icon: Table },
+  { path: '/design/toggle-group', label: 'Toggle Group', icon: ToggleLeft },
 ]
 
 export default function DesignLayout({ children }: { children: ReactNode }) {
