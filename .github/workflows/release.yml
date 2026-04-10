@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (x.y.z)"
+        required: true
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Test
+        run: bun run test
+
+      - name: Build
+        run: bun run build
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Bump version
+        run: |
+          npm version ${{ inputs.version }} --no-git-tag-version --allow-same-version
+          bun -e "
+            const fs = require('fs');
+            const v = '${{ inputs.version }}';
+            let readme = fs.readFileSync('README.md', 'utf8');
+            readme = readme.replace(/opensoma@[\d.]+/g, 'opensoma@' + v);
+            fs.writeFileSync('README.md', readme);
+            const pluginJson = JSON.parse(fs.readFileSync('.claude-plugin/plugin.json', 'utf8'));
+            pluginJson.version = v;
+            fs.writeFileSync('.claude-plugin/plugin.json', JSON.stringify(pluginJson, null, 2) + '\n');
+            for (const dir of fs.readdirSync('skills')) {
+              const p = 'skills/' + dir + '/SKILL.md';
+              if (fs.existsSync(p)) {
+                let s = fs.readFileSync(p, 'utf8');
+                s = s.replace(/^version: .+$/m, 'version: ' + v);
+                fs.writeFileSync(p, s);
+              }
+            }
+          "
+
+      - name: Commit and tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json README.md skills/*/SKILL.md .claude-plugin/plugin.json
+          git diff --staged --quiet || git commit -m "${{ inputs.version }}"
+          git tag "${{ inputs.version }}"
+          git push origin HEAD --tags
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+
+      - name: Create GitHub Release
+        run: gh release create "${{ inputs.version }}" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
