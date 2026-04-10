@@ -64,7 +64,7 @@ export default async function MentoringPage({
           columns={[
             {
               header: '유형',
-              cell: (item) => item.type,
+              cell: (item) => <TypeBadge type={item.type} />,
             },
             {
               header: '제목',
@@ -110,4 +110,19 @@ export default async function MentoringPage({
 
 function getFirstValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value
+}
+
+const typeConfig: Record<string, { label: string; color: string }> = {
+  public: { label: '자유멘토링', color: 'bg-emerald-500' },
+  lecture: { label: '멘토특강', color: 'bg-amber-500' },
+}
+
+function TypeBadge({ type }: { type: string }) {
+  const config = typeConfig[type] ?? { label: type, color: 'bg-foreground-muted' }
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className={`inline-block size-2 rounded-full ${config.color}`} />
+      <span className="text-sm">{config.label}</span>
+    </div>
+  )
 }
