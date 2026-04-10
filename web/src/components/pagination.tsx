@@ -69,7 +69,7 @@ function PageButton({ children, page, pathname, searchParams, isCurrent = false,
         value && key !== 'page' ? <input key={key} type="hidden" name={key} value={value} /> : null,
       )}
       <input type="hidden" name="page" value={String(page)} />
-      <Button disabled={disabled} size="sm" variant={isCurrent ? 'primary' : 'ghost'}>
+      <Button disabled={disabled} size="sm" variant={isCurrent ? 'primary' : 'ghost'} className="font-semibold">
         {children}
       </Button>
     </form>

@@ -5,7 +5,7 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  return <Badge variant={resolveVariant(status)}>{status}</Badge>
+  return <Badge variant={resolveVariant(status)} className="font-semibold">{status}</Badge>
 }
 
 function resolveVariant(status: string) {
