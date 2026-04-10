@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
-import { RoomCardList } from '~/app/(main)/room/components/room-card-list'
 import { RoomFilters } from '~/app/(main)/room/components/room-filters'
+import { RoomTimeline } from '~/app/(main)/room/components/room-timeline'
 import { requireAuth } from '~/lib/auth'
 
 export const metadata: Metadata = {
@@ -27,7 +27,7 @@ export default async function RoomPage({
       </div>
 
       <RoomFilters date={date} room={room} />
-      <RoomCardList date={date} rooms={rooms} />
+      <RoomTimeline date={date} rooms={rooms} />
     </div>
   )
 }
