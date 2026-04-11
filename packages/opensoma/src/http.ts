@@ -1,10 +1,12 @@
 import { BASE_URL, MENU_NO } from './constants'
+import { AuthenticationError } from './errors'
 import { parseCsrfToken } from './formatters'
 
 interface RequestOptions {
   sessionCookie?: string
   cookies?: string
   csrfToken?: string
+  verbose?: boolean
 }
 
 interface CheckLoginResponse {
@@ -24,9 +26,11 @@ interface HeadersWithCookieHelpers extends Omit<Headers, 'getSetCookie'> {
 export class SomaHttp {
   private cookies = new Map<string, string>()
   private csrfToken: string | null
+  private verbose: boolean
 
   constructor(options?: RequestOptions) {
     this.csrfToken = options?.csrfToken ?? null
+    this.verbose = options?.verbose ?? false
 
     if (options?.cookies) {
       for (const cookie of options.cookies.split(';')) {
@@ -46,12 +50,21 @@ export class SomaHttp {
     })
 
     this.updateFromResponse(response)
-    return response.text()
+    const body = await response.text()
+
+    const errorInfo = this.extractErrorFromResponse(body, null, path)
+    if (errorInfo === '__AUTH_ERROR__') {
+      throw new AuthenticationError()
+    }
+
+    return body
   }
 
   async post(path: string, body: Record<string, string>): Promise<string> {
+    const url = this.buildUrl(path)
     const formBody = new URLSearchParams(this.buildBody(body))
-    let response = await fetch(this.buildUrl(path), {
+
+    let response = await fetch(url, {
       method: 'POST',
       headers: {
         ...this.buildHeaders(),
@@ -63,11 +76,25 @@ export class SomaHttp {
 
     this.updateFromResponse(response)
 
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get('location')
+      const intermediateBody = await response.clone().text()
+      const errorInfo = this.extractErrorFromResponse(intermediateBody, location, path)
+      if (errorInfo) {
+        if (errorInfo === '__AUTH_ERROR__') {
+          throw new AuthenticationError()
+        }
+        throw new Error(errorInfo)
+      }
+    }
+
+    let finalUrl = url
     while (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('location')
       if (!location) break
 
       const redirectUrl = location.startsWith('http') ? location : new URL(location, `${BASE_URL}/`).toString()
+      finalUrl = redirectUrl
       response = await fetch(redirectUrl, {
         method: 'GET',
         headers: this.buildHeaders(),
@@ -76,7 +103,83 @@ export class SomaHttp {
       this.updateFromResponse(response)
     }
 
-    return response.text()
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const finalBody = await response.text()
+    this.log('POST', path, '-> Final URL:', finalUrl)
+    this.log('POST', path, '-> Response body (first 200 chars):', finalBody.slice(0, 200))
+
+    // Use final URL path for auth check, not original path (login flow redirects to main page)
+    const finalPath = new URL(finalUrl).pathname
+    const errorInfo = this.extractErrorFromResponse(finalBody, null, finalPath)
+    if (errorInfo) {
+      this.log('POST', path, '-> Error detected:', errorInfo)
+      if (errorInfo === '__AUTH_ERROR__') {
+        throw new AuthenticationError()
+      }
+      throw new Error(errorInfo)
+    }
+
+    if (finalPath.includes('insertForm') || finalPath.includes('error') || finalPath.includes('fail')) {
+      this.log('POST', path, '-> Suspicious final URL:', finalUrl)
+      throw new Error('멘토링 등록에 실패했습니다.')
+    }
+
+    return finalBody
+  }
+
+  private extractErrorFromResponse(body: string, location: string | null, path?: string): string | null {
+    this.log('extractErrorFromResponse', path, 'body length:', body.length, 'title:', body.match(/<title>([^<]*)<\/title>/)?.[1])
+
+    const alertMatch = body.match(/<script>\s*alert\(['"](.+?)['"]\)\s*<\/script>/)
+    if (alertMatch) {
+      this.log('Found alert match:', alertMatch[1])
+      return alertMatch[1]
+    }
+
+    const titleMatch = body.match(/<title>([^<]*)<\/title>/i)
+    const pageTitle = titleMatch?.[1] ?? ''
+
+    // Check for login page - server returns login page HTML (with login form) when session is invalid
+    // The login page has both the SW마에스트로 title AND a login form with username/password inputs
+    // Skip this check during login flow (forLogin = GET for CSRF, toLogin = POST credentials)
+    const isLoginPath = path?.includes('/member/user/forLogin') || path?.includes('/member/user/toLogin')
+    const hasUsername = body.includes('name="username"')
+    const hasPassword = body.includes('name="password"')
+    if (!isLoginPath && hasUsername && hasPassword && (pageTitle.includes('AI·SW마에스트로') || pageTitle.includes('SW마에스트로'))) {
+      return '__AUTH_ERROR__'
+    }
+
+    const errorTitleMatch = body.match(/<title>(에러안내|오류|Error)[^<]*<\/title>/i)
+    if (errorTitleMatch) {
+      this.log('Found error title match')
+      const msgVarMatch = body.match(/var\s+msg\s*=\s*['"](.+?)['"];/)
+      if (msgVarMatch) {
+        this.log('Found msg var:', msgVarMatch[1].slice(0, 100))
+        return msgVarMatch[1]
+      }
+      const errorPatterns = [
+        '등록에 실패',
+        '저장에 실패',
+        '오류가 발생',
+        '실패하였습니다',
+        '잘못된 접근',
+        '권한이 없습니다',
+        'SQLException',
+        'Error updating database',
+      ]
+      for (const pattern of errorPatterns) {
+        if (body.includes(pattern)) {
+          this.log('Found error pattern:', pattern)
+          return '멘토링 등록에 실패했습니다: ' + pattern
+        }
+      }
+      return '에러가 발생했습니다'
+    }
+
+    return null
   }
 
   async postJson<T>(path: string, body: Record<string, string>): Promise<T> {
@@ -229,5 +332,11 @@ export class SomaHttp {
 
   private serializeCookies(): string {
     return [...this.cookies.entries()].map(([name, value]) => `${name}=${value}`).join('; ')
+  }
+
+  private log(...args: unknown[]): void {
+    if (this.verbose) {
+      console.log('[opensoma]', ...args)
+    }
   }
 }
