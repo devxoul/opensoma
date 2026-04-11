@@ -1,16 +1,17 @@
 import { execSync } from 'node:child_process'
 import { createDecipheriv, pbkdf2Sync } from 'node:crypto'
-import { copyFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { homedir, tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 
 const require = createRequire(import.meta.url)
 
 const COOKIE_QUERY =
-  "SELECT encrypted_value, value FROM cookies WHERE host_key LIKE '%swmaestro.ai' AND name = 'JSESSIONID' ORDER BY last_access_utc DESC LIMIT 1"
+  "SELECT encrypted_value, last_access_utc, value FROM cookies WHERE host_key LIKE '%swmaestro.ai' AND name = 'JSESSIONID' ORDER BY last_access_utc DESC LIMIT 1"
 const CHROMIUM_SALT = 'saltysalt'
 const CHROMIUM_IV = Buffer.alloc(16, 0x20)
+const PROFILE_DIR_PATTERN = /^Profile\s+\d+$/
 
 type BrowserConfig = {
   name: string
@@ -22,7 +23,15 @@ type BrowserConfig = {
 
 type CookieRow = {
   encrypted_value: Uint8Array | Buffer | null
+  last_access_utc?: number | bigint | null
   value: string | null
+}
+
+export interface ExtractedSessionCandidate {
+  browser: string
+  lastAccessUtc: number
+  profile: string
+  sessionCookie: string
 }
 
 export const BROWSERS: BrowserConfig[] = [
@@ -82,12 +91,30 @@ function queryCookieDb(dbPath: string): CookieRow | undefined {
     }
   }
 
-  const Database = require('better-sqlite3')
-  const db = new Database(dbPath, { readonly: true })
   try {
-    return db.prepare(COOKIE_QUERY).get() as CookieRow | undefined
-  } finally {
-    db.close()
+    const { DatabaseSync } = require('node:sqlite') as {
+      DatabaseSync: new (path: string, options?: { readonly?: boolean }) => {
+        close: () => void
+        prepare: (query: string) => { get: () => CookieRow | undefined }
+      }
+    }
+    const db = new DatabaseSync(dbPath, { readonly: true })
+    try {
+      return db.prepare(COOKIE_QUERY).get() ?? undefined
+    } finally {
+      db.close()
+    }
+  } catch {
+    const Database = require('better-sqlite3') as new (path: string, options?: { readonly?: boolean }) => {
+      close: () => void
+      prepare: (query: string) => { get: () => CookieRow | undefined }
+    }
+    const db = new Database(dbPath, { readonly: true })
+    try {
+      return db.prepare(COOKIE_QUERY).get() ?? undefined
+    } finally {
+      db.close()
+    }
   }
 }
 
@@ -98,11 +125,26 @@ export class TokenExtractor {
   ) {}
 
   async extract(): Promise<{ sessionCookie: string } | null> {
+    const candidates = await this.extractCandidates()
+    const firstCandidate = candidates[0]
+
+    if (!firstCandidate) {
+      return null
+    }
+
+    return { sessionCookie: firstCandidate.sessionCookie }
+  }
+
+  async extractCandidates(): Promise<ExtractedSessionCandidate[]> {
+    const candidates = new Map<string, ExtractedSessionCandidate>()
+
     for (const databasePath of this.findCookieDatabases()) {
       const browser = this.getBrowserByPath(databasePath)
       if (!browser) {
         continue
       }
+
+      const profile = basename(dirname(databasePath))
 
       const tempDirectory = mkdtempSync(join(tmpdir(), 'opensoma-cookie-db-'))
       const tempDatabasePath = join(tempDirectory, 'Cookies')
@@ -117,7 +159,13 @@ export class TokenExtractor {
 
         const plaintextValue = typeof row.value === 'string' ? row.value.trim() : ''
         if (plaintextValue) {
-          return { sessionCookie: plaintextValue }
+          this.addCandidate(candidates, {
+            browser: browser.name,
+            lastAccessUtc: this.normalizeLastAccessUtc(row.last_access_utc),
+            profile,
+            sessionCookie: plaintextValue,
+          })
+          continue
         }
 
         if (!row.encrypted_value || row.encrypted_value.length === 0) {
@@ -126,29 +174,24 @@ export class TokenExtractor {
 
         const decryptedValue = await this.decryptCookie(Buffer.from(row.encrypted_value), browser.name)
         if (decryptedValue) {
-          return { sessionCookie: decryptedValue }
+          this.addCandidate(candidates, {
+            browser: browser.name,
+            lastAccessUtc: this.normalizeLastAccessUtc(row.last_access_utc),
+            profile,
+            sessionCookie: decryptedValue,
+          })
         }
       } catch {
-        continue
       } finally {
         rmSync(tempDirectory, { recursive: true, force: true })
       }
     }
 
-    return null
+    return [...candidates.values()].sort((left, right) => right.lastAccessUtc - left.lastAccessUtc)
   }
 
   findCookieDatabases(): string[] {
-    const browserPaths =
-      this.platform === 'darwin'
-        ? BROWSERS.map((browser) =>
-            join(this.homeDirectory, 'Library', 'Application Support', browser.macPath, 'Default', 'Cookies'),
-          )
-        : this.platform === 'linux'
-          ? BROWSERS.map((browser) => join(this.homeDirectory, '.config', browser.linuxPath, 'Default', 'Cookies'))
-          : []
-
-    return browserPaths.filter((databasePath) => existsSync(databasePath))
+    return BROWSERS.flatMap((browser) => this.findBrowserCookieDatabases(browser))
   }
 
   private async decryptCookie(encryptedValue: Buffer, browserName: string): Promise<string> {
@@ -204,5 +247,52 @@ export class TokenExtractor {
     return BROWSERS.find(
       (browser) => databasePath.includes(`${browser.macPath}/`) || databasePath.includes(`${browser.linuxPath}/`),
     )
+  }
+
+  private addCandidate(
+    candidates: Map<string, ExtractedSessionCandidate>,
+    candidate: ExtractedSessionCandidate,
+  ): void {
+    const existing = candidates.get(candidate.sessionCookie)
+    if (!existing || existing.lastAccessUtc < candidate.lastAccessUtc) {
+      candidates.set(candidate.sessionCookie, candidate)
+    }
+  }
+
+  private findBrowserCookieDatabases(browser: BrowserConfig): string[] {
+    const browserRoot = this.getBrowserRoot(browser)
+    if (!browserRoot || !existsSync(browserRoot)) {
+      return []
+    }
+
+    return readdirSync(browserRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && this.isSupportedProfileDirectory(entry.name))
+      .sort((left, right) => left.name.localeCompare(right.name))
+      .map((entry) => join(browserRoot, entry.name, 'Cookies'))
+      .filter((databasePath) => existsSync(databasePath))
+  }
+
+  private getBrowserRoot(browser: BrowserConfig): string | null {
+    if (this.platform === 'darwin') {
+      return join(this.homeDirectory, 'Library', 'Application Support', browser.macPath)
+    }
+
+    if (this.platform === 'linux') {
+      return join(this.homeDirectory, '.config', browser.linuxPath)
+    }
+
+    return null
+  }
+
+  private isSupportedProfileDirectory(profileName: string): boolean {
+    return profileName === 'Default' || PROFILE_DIR_PATTERN.test(profileName)
+  }
+
+  private normalizeLastAccessUtc(lastAccessUtc: number | bigint | null | undefined): number {
+    if (typeof lastAccessUtc === 'bigint') {
+      return Number(lastAccessUtc)
+    }
+
+    return typeof lastAccessUtc === 'number' ? lastAccessUtc : 0
   }
 }

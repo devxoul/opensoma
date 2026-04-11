@@ -4,11 +4,37 @@ import { CredentialManager } from '../credential-manager'
 import { SomaHttp } from '../http'
 import { handleError } from '../shared/utils/error-handler'
 import { formatOutput } from '../shared/utils/output'
-import { warn } from '../shared/utils/stderr'
+import type { ExtractedSessionCandidate } from '../token-extractor'
 
 type LoginOptions = { username?: string; password?: string; pretty?: boolean }
 type StatusOptions = { pretty?: boolean }
 type ExtractOptions = { pretty?: boolean }
+type ExtractedSessionValidator = Pick<SomaHttp, 'checkLogin' | 'extractCsrfToken'>
+
+export async function resolveExtractedCredentials(
+  candidates: ExtractedSessionCandidate[],
+  createValidator: (sessionCookie: string) => ExtractedSessionValidator = (sessionCookie) =>
+    new SomaHttp({ sessionCookie }),
+): Promise<{ csrfToken: string; sessionCookie: string } | null> {
+  for (const candidate of candidates) {
+    const http = createValidator(candidate.sessionCookie)
+
+    try {
+      const valid = Boolean(await http.checkLogin())
+      if (!valid) {
+        continue
+      }
+
+      return {
+        sessionCookie: candidate.sessionCookie,
+        csrfToken: await http.extractCsrfToken(),
+      }
+    } catch {
+    }
+  }
+
+  return null
+}
 
 async function loginAction(options: LoginOptions): Promise<void> {
   try {
@@ -95,39 +121,29 @@ async function statusAction(options: StatusOptions): Promise<void> {
 async function extractAction(options: ExtractOptions): Promise<void> {
   try {
     const { TokenExtractor } = (await import('../token-extractor')) as {
-      TokenExtractor: new () => { extract: () => Promise<{ sessionCookie: string } | null> }
+      TokenExtractor: new () => { extractCandidates: () => Promise<ExtractedSessionCandidate[]> }
     }
     const extractor = new TokenExtractor()
-    const result = await extractor.extract()
-    if (!result) {
+    const candidates = await extractor.extractCandidates()
+    if (candidates.length === 0) {
       throw new Error(
         'No SWMaestro session found in any browser. Login to swmaestro.ai in a supported Chromium browser (Chrome, Edge, Brave, Arc, Vivaldi) first.',
       )
     }
 
-    const http = new SomaHttp({ sessionCookie: result.sessionCookie })
-
-    let valid = false
-    let csrfToken: string | undefined
-    try {
-      valid = Boolean(await http.checkLogin())
-      if (valid) {
-        csrfToken = await http.extractCsrfToken()
-      }
-    } catch {
-      valid = false
-    }
-
-    if (!valid) {
-      warn('Warning: Could not validate session. Cookies may be expired.')
+    const credentials = await resolveExtractedCredentials(candidates)
+    if (!credentials) {
+      throw new Error(
+        'Found SWMaestro session cookies in supported browsers, but none are valid. Refresh your swmaestro.ai login in a supported Chromium browser and try again.',
+      )
     }
 
     await new CredentialManager().setCredentials({
-      sessionCookie: result.sessionCookie,
-      csrfToken: csrfToken ?? '',
+      sessionCookie: credentials.sessionCookie,
+      csrfToken: credentials.csrfToken,
       loggedInAt: new Date().toISOString(),
     })
-    console.log(formatOutput({ ok: true, extracted: true, valid }, options.pretty))
+    console.log(formatOutput({ ok: true, extracted: true, valid: true }, options.pretty))
   } catch (error) {
     handleError(error)
   }
