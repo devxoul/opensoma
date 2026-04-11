@@ -48,18 +48,21 @@ jobs:
 
       - name: Bump version
         run: |
-          cd packages/opensoma && npm version ${{ inputs.version }} --no-git-tag-version --allow-same-version
+          cd packages/opensoma
           bun -e "
             const fs = require('fs');
             const v = '${{ inputs.version }}';
-            let readme = fs.readFileSync('README.md', 'utf8');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = v;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            let readme = fs.readFileSync('../../README.md', 'utf8');
             readme = readme.replace(/opensoma@[\d.]+/g, 'opensoma@' + v);
-            fs.writeFileSync('README.md', readme);
-            const pluginJson = JSON.parse(fs.readFileSync('.claude-plugin/plugin.json', 'utf8'));
+            fs.writeFileSync('../../README.md', readme);
+            const pluginJson = JSON.parse(fs.readFileSync('../../.claude-plugin/plugin.json', 'utf8'));
             pluginJson.version = v;
-            fs.writeFileSync('.claude-plugin/plugin.json', JSON.stringify(pluginJson, null, 2) + '\n');
-            for (const dir of fs.readdirSync('skills')) {
-              const p = 'skills/' + dir + '/SKILL.md';
+            fs.writeFileSync('../../.claude-plugin/plugin.json', JSON.stringify(pluginJson, null, 2) + '\n');
+            for (const dir of fs.readdirSync('../../skills')) {
+              const p = '../../skills/' + dir + '/SKILL.md';
               if (fs.existsSync(p)) {
                 let s = fs.readFileSync(p, 'utf8');
                 s = s.replace(/^version: .+$/m, 'version: ' + v);
