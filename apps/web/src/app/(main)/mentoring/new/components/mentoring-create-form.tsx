@@ -197,7 +197,7 @@ export function MentoringCreateForm({ initialRooms, initialDate, defaultValues }
                     </div>
                   ) : null}
 
-                  <Collapsible defaultOpen={!confirmed}>
+                  <Collapsible open={!confirmed} onOpenChange={(open) => setConfirmed(!open)}>
                     <CollapsibleTrigger>회의실 타임라인</CollapsibleTrigger>
                     <CollapsiblePanel>
                       <div className="space-y-4">
