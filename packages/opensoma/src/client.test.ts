@@ -3,7 +3,7 @@ import { afterEach, describe, expect, mock, test } from 'bun:test'
 import { SomaClient } from './client'
 import { MENU_NO } from './constants'
 import { AuthenticationError } from './errors'
-import { SomaHttp } from './http'
+import type { SomaHttp } from './http'
 
 afterEach(() => {
   mock.restore()
@@ -253,6 +253,20 @@ describe('SomaClient', () => {
 
     expect(calls).toEqual(['neo@example.com:secret'])
     await expect(client.isLoggedIn()).resolves.toBe(true)
+  })
+
+  test('logout delegates to SomaHttp', async () => {
+    const client = new SomaClient()
+    const calls: string[] = []
+    Reflect.set(client, 'http', {
+      logout: async () => {
+        calls.push('logout')
+      },
+    })
+
+    await client.logout()
+
+    expect(calls).toEqual(['logout'])
   })
 
   test('auth-required operations throw AuthenticationError when not logged in', async () => {

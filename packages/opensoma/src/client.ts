@@ -319,6 +319,10 @@ export class SomaClient {
     return Boolean(await this.http.checkLogin())
   }
 
+  async logout(): Promise<void> {
+    await this.http.logout()
+  }
+
   async saveCredentials(manager = new CredentialManager()): Promise<void> {
     const sessionCookie = this.http.getSessionCookie()
     const csrfToken = this.http.getCsrfToken()
