@@ -8,6 +8,7 @@ const dirname = path.dirname(fileURLToPath(import.meta.url))
 const nextConfig: NextConfig = {
   experimental: { externalDir: true },
   outputFileTracingRoot: path.resolve(dirname, '../..'),
+  serverExternalPackages: ['sanitize-html'],
   turbopack: {
     root: path.resolve(dirname, '../..'),
   },
