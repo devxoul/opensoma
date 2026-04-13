@@ -11,9 +11,9 @@ const typeFilters = [
 ]
 
 export function MentoringFilters() {
-  const [status, setStatus] = useQueryState('status')
-  const [type, setType] = useQueryState('type')
-  const [search, setSearch] = useQueryState('search')
+  const [status, setStatus] = useQueryState('status', { shallow: false })
+  const [type, setType] = useQueryState('type', { shallow: false })
+  const [search, setSearch] = useQueryState('search', { shallow: false })
 
   const mineValue = search === 'author:@me' ? 'mine' : 'all'
 

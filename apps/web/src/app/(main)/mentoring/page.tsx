@@ -55,8 +55,8 @@ export default async function MentoringPage({
 }) {
   const resolvedSearchParams = await searchParams
   const page = Number(getFirstValue(resolvedSearchParams.page) ?? '1') || 1
-  const status = getFirstValue(resolvedSearchParams.status) ?? undefined
-  const type = getFirstValue(resolvedSearchParams.type) ?? undefined
+  const status = getFirstValue(resolvedSearchParams.status) || undefined
+  const type = getFirstValue(resolvedSearchParams.type) || undefined
   const searchRaw = getFirstValue(resolvedSearchParams.search)
   const search = parseSearchQuery(searchRaw === 'all' || !searchRaw ? '' : searchRaw)
   const client = await requireAuth()
