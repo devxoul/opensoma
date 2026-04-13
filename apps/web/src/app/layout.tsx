@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { NuqsAdapter } from 'nuqs/adapters/next/app'
 
 import { ThemeProvider } from '@/lib/theme'
 
@@ -30,7 +31,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-sans antialiased">
         <ThemeProvider>
-          <div className="isolate min-h-screen">{children}</div>
+          <NuqsAdapter>
+            <div className="isolate min-h-screen">{children}</div>
+          </NuqsAdapter>
         </ThemeProvider>
       </body>
     </html>
