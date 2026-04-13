@@ -49,6 +49,8 @@ opensoma auth status
 opensoma auth logout
 ```
 
+가능하면 SWMaestro 서버 세션 로그아웃도 함께 시도한 뒤, 로컬 인증 정보를 삭제합니다.
+
 인증 정보는 `~/.config/opensoma/credentials.json`에 저장되며, 파일 권한은 `0600`으로 설정됩니다.
 
 ## CLI 명령어

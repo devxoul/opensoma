@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { resolveExtractedCredentials } from './auth'
+import { inspectStoredAuthStatus, resolveExtractedCredentials } from './auth'
 
 describe('resolveExtractedCredentials', () => {
   test('returns the first candidate that validates successfully', async () => {
@@ -51,5 +51,67 @@ describe('resolveExtractedCredentials', () => {
     )
 
     expect(credentials).toBeNull()
+  })
+})
+
+describe('inspectStoredAuthStatus', () => {
+  test('clears stale credentials when the stored session is invalid', async () => {
+    let removed = false
+
+    const status = await inspectStoredAuthStatus(
+      {
+        getCredentials: async () => ({
+          sessionCookie: 'stale-session',
+          csrfToken: 'csrf-token',
+          username: 'neo@example.com',
+        }),
+        remove: async () => {
+          removed = true
+        },
+      },
+      () => ({
+        checkLogin: async () => null,
+      }),
+    )
+
+    expect(status).toEqual({
+      authenticated: false,
+      credentials: null,
+      clearedStaleCredentials: true,
+      hint: 'Session expired. Run: opensoma auth login or opensoma auth extract',
+    })
+    expect(removed).toBe(true)
+  })
+
+  test('preserves credentials when session verification fails unexpectedly', async () => {
+    let removed = false
+
+    const status = await inspectStoredAuthStatus(
+      {
+        getCredentials: async () => ({
+          sessionCookie: 'maybe-valid-session',
+          csrfToken: 'csrf-token',
+          username: 'neo@example.com',
+          loggedInAt: '2026-04-13T00:00:00.000Z',
+        }),
+        remove: async () => {
+          removed = true
+        },
+      },
+      () => ({
+        checkLogin: async () => {
+          throw new Error('network error')
+        },
+      }),
+    )
+
+    expect(status).toEqual({
+      authenticated: true,
+      valid: false,
+      username: 'neo@example.com',
+      loggedInAt: '2026-04-13T00:00:00.000Z',
+      hint: 'Could not verify session. Try again or run: opensoma auth login or opensoma auth extract',
+    })
+    expect(removed).toBe(false)
   })
 })

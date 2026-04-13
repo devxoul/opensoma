@@ -10,6 +10,11 @@ type LoginOptions = { username?: string; password?: string; pretty?: boolean }
 type StatusOptions = { pretty?: boolean }
 type ExtractOptions = { pretty?: boolean }
 type ExtractedSessionValidator = Pick<SomaHttp, 'checkLogin' | 'extractCsrfToken'>
+type CredentialStore = Pick<CredentialManager, 'getCredentials' | 'remove'>
+type StatusValidator = Pick<SomaHttp, 'checkLogin'>
+
+const EXPIRED_SESSION_HINT = 'Session expired. Run: opensoma auth login or opensoma auth extract'
+const UNVERIFIED_SESSION_HINT = 'Could not verify session. Try again or run: opensoma auth login or opensoma auth extract'
 
 export async function resolveExtractedCredentials(
   candidates: ExtractedSessionCandidate[],
@@ -76,42 +81,70 @@ async function loginAction(options: LoginOptions): Promise<void> {
 
 async function logoutAction(options: StatusOptions): Promise<void> {
   try {
-    await new CredentialManager().remove()
-    console.log(formatOutput({ ok: true, loggedIn: false }, options.pretty))
+    const manager = new CredentialManager()
+    const credentials = await manager.getCredentials()
+    let upstreamLoggedOut = false
+
+    if (credentials) {
+      const http = new SomaHttp({ sessionCookie: credentials.sessionCookie, csrfToken: credentials.csrfToken })
+
+      try {
+        await http.logout()
+        upstreamLoggedOut = true
+      } catch {}
+    }
+
+    await manager.remove()
+    console.log(formatOutput({ ok: true, loggedIn: false, upstreamLoggedOut }, options.pretty))
   } catch (error) {
     handleError(error)
   }
 }
 
+export async function inspectStoredAuthStatus(
+  manager: CredentialStore = new CredentialManager(),
+  createValidator: (credentials: { sessionCookie: string; csrfToken: string }) => StatusValidator = (credentials) =>
+    new SomaHttp({ sessionCookie: credentials.sessionCookie, csrfToken: credentials.csrfToken }),
+): Promise<Record<string, boolean | null | string>> {
+  const creds = await manager.getCredentials()
+  if (!creds) {
+    return { authenticated: false, credentials: null }
+  }
+
+  let identity = null
+  try {
+    identity = await createValidator(creds).checkLogin()
+  } catch {
+    return {
+      authenticated: true,
+      valid: false,
+      username: creds.username ?? null,
+      loggedInAt: creds.loggedInAt ?? null,
+      hint: UNVERIFIED_SESSION_HINT,
+    }
+  }
+
+  if (!identity) {
+    await manager.remove()
+    return {
+      authenticated: false,
+      credentials: null,
+      clearedStaleCredentials: true,
+      hint: EXPIRED_SESSION_HINT,
+    }
+  }
+
+  return {
+    authenticated: true,
+    valid: true,
+    username: creds.username ?? null,
+    loggedInAt: creds.loggedInAt ?? null,
+  }
+}
+
 async function statusAction(options: StatusOptions): Promise<void> {
   try {
-    const manager = new CredentialManager()
-    const creds = await manager.getCredentials()
-    if (!creds) {
-      console.log(formatOutput({ authenticated: false, credentials: null }, options.pretty))
-      return
-    }
-
-    let valid = false
-    try {
-      const http = new SomaHttp({ sessionCookie: creds.sessionCookie, csrfToken: creds.csrfToken })
-      valid = Boolean(await http.checkLogin())
-    } catch {
-      valid = false
-    }
-
-    console.log(
-      formatOutput(
-        {
-          authenticated: true,
-          valid,
-          username: creds.username ?? null,
-          loggedInAt: creds.loggedInAt ?? null,
-          ...(valid ? {} : { hint: 'Session expired. Run: opensoma auth login or opensoma auth extract' }),
-        },
-        options.pretty,
-      ),
-    )
+    console.log(formatOutput(await inspectStoredAuthStatus(), options.pretty))
   } catch (error) {
     handleError(error)
   }
@@ -160,7 +193,7 @@ export const authCommand = new Command('auth')
   )
   .addCommand(
     new Command('logout')
-      .description('Remove saved credentials')
+      .description('Log out upstream session and remove saved credentials')
       .option('--pretty', 'Pretty print JSON output')
       .action(logoutAction),
   )
