@@ -33,7 +33,7 @@ export function NavShell({ isLoggedIn, username }: NavShellProps) {
             <List size={20} />
           </button>
           <div className="flex min-w-0 items-center gap-3">
-            <h1 className="truncate text-lg font-extrabold text-foreground">SW마에스트로</h1>
+            <h1 className="truncate text-lg font-extrabold text-foreground">오픈소마</h1>
             <span className="hidden text-sm font-semibold text-foreground-muted md:inline">마이페이지</span>
           </div>
         </div>

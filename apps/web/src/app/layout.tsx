@@ -6,8 +6,8 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | SW마에스트로',
-    default: 'SW마에스트로',
+    template: '%s | 오픈소마',
+    default: '오픈소마',
   },
   description: 'SWMaestro MyPage',
 }
