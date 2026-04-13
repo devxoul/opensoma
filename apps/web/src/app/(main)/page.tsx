@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { StatusBadge } from '@/components/status-badge'
 import { requireAuth } from '@/lib/auth'
 import { cn } from '@/lib/cn'
+import { buildMentoringUrl } from '@/lib/mentoring-url'
 import { convertSwmaestroUrl } from '@/lib/swmaestro-url'
 import { Badge } from '@/ui/badge'
 import { Card, CardContent, CardHeader } from '@/ui/card'
@@ -35,11 +36,13 @@ export default async function DashboardPage() {
           items={dashboard.mentoringSessions.filter((item) => item.type === '자유 멘토링')}
           title="자유 멘토링"
           icon={ChalkboardTeacher}
+          typeFilter="public"
         />
         <MentoringCard
           items={dashboard.mentoringSessions.filter((item) => item.type === '멘토 특강')}
           title="멘토 특강"
           icon={ChalkboardTeacher}
+          typeFilter="lecture"
         />
       </div>
 
@@ -121,6 +124,7 @@ function MentoringCard({
   items,
   title,
   icon: Icon,
+  typeFilter,
 }: {
   items: Array<{
     title: string
@@ -134,6 +138,7 @@ function MentoringCard({
   }>
   title: string
   icon: typeof ChalkboardTeacher
+  typeFilter?: string
 }) {
   const today = new Date().toISOString().slice(0, 10)
   const totalHours = items.reduce((sum, item) => {
@@ -152,7 +157,10 @@ function MentoringCard({
             <h2 className="text-lg font-bold text-foreground">{title}</h2>
             {totalHours > 0 && <span className="text-sm text-foreground-muted">({totalHours}시간)</span>}
           </div>
-          <Link href="/mentoring" className="text-sm text-primary hover:underline">
+          <Link
+            href={buildMentoringUrl({ type: typeFilter, search: 'author:@me' })}
+            className="text-sm text-primary hover:underline"
+          >
             전체 보기
           </Link>
         </div>
