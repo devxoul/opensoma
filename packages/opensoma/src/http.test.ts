@@ -117,7 +117,7 @@ describe('SomaHttp', () => {
   })
 
   test('checkLogin returns user identity when logged in, null otherwise', async () => {
-    const loggedInMock = mock(async (_input: RequestInfo | URL, init?: RequestInit) =>
+    const loggedInMock = mock(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       createResponse(
         JSON.stringify({
           resultCode: 'fail',
@@ -135,6 +135,7 @@ describe('SomaHttp', () => {
     })
     expect(loggedInMock).toHaveBeenCalledWith('https://www.swmaestro.ai/sw/member/user/checkLogin.json', {
       method: 'GET',
+      redirect: 'manual',
       headers: {
         'Accept-Language': 'ko,en-US;q=0.9,en;q=0.8',
         'User-Agent':
@@ -149,6 +150,29 @@ describe('SomaHttp', () => {
     globalThis.fetch = notLoggedInMock as typeof fetch
 
     await expect(new SomaHttp().checkLogin()).resolves.toBeNull()
+  })
+
+  test('checkLogin returns null when the server redirects to login', async () => {
+    const fetchMock = mock(async () =>
+      createResponse('', [], 'text/html', {
+        status: 302,
+        headers: { Location: 'http://www.swmaestro.ai/sw/member/user/loginForward.do' },
+      }),
+    )
+    globalThis.fetch = fetchMock as typeof fetch
+
+    await expect(new SomaHttp({ sessionCookie: 'session-1' }).checkLogin()).resolves.toBeNull()
+  })
+
+  test('checkLogin returns null when the server serves login html instead of json', async () => {
+    const fetchMock = mock(async () =>
+      createResponse(
+        '<html><head><title>AI·SW마에스트로</title></head><body><form><input name="username"><input name="password"></form></body></html>',
+      ),
+    )
+    globalThis.fetch = fetchMock as typeof fetch
+
+    await expect(new SomaHttp({ sessionCookie: 'session-1' }).checkLogin()).resolves.toBeNull()
   })
 
   test('logout calls logout endpoint', async () => {
@@ -174,9 +198,14 @@ describe('SomaHttp', () => {
   })
 })
 
-function createResponse(body: string, cookies: string[] = [], contentType = 'text/html'): Response {
-  const headers = new Headers({ 'Content-Type': contentType })
-  const response = new Response(body, { headers })
+function createResponse(
+  body: string,
+  cookies: string[] = [],
+  contentType = 'text/html',
+  options: { status?: number; headers?: Record<string, string> } = {},
+): Response {
+  const headers = new Headers({ 'Content-Type': contentType, ...(options.headers ?? {}) })
+  const response = new Response(body, { headers, status: options.status })
   const cookieHeaders = cookies
 
   Object.defineProperty(response.headers, 'getSetCookie', {

@@ -153,6 +153,10 @@ export class SomaHttp {
     const titleMatch = body.match(/<title>([^<]*)<\/title>/i)
     const pageTitle = titleMatch?.[1] ?? ''
 
+    if (this.isAuthRedirect(location)) {
+      return '__AUTH_ERROR__'
+    }
+
     // Check for login page - server returns login page HTML (with login form) when session is invalid
     // The login page has both the SW마에스트로 title AND a login form with username/password inputs
     // Skip this check during login flow (forLogin = GET for CSRF, toLogin = POST credentials)
@@ -189,7 +193,7 @@ export class SomaHttp {
       for (const pattern of errorPatterns) {
         if (body.includes(pattern)) {
           this.log('Found error pattern:', pattern)
-          return '멘토링 등록에 실패했습니다: ' + pattern
+          return `멘토링 등록에 실패했습니다: ${pattern}`
         }
       }
       return '에러가 발생했습니다'
@@ -244,16 +248,51 @@ export class SomaHttp {
   }
 
   async checkLogin(): Promise<UserIdentity | null> {
-    const response = await fetch(this.buildUrl('/member/user/checkLogin.json'), {
+    const path = '/member/user/checkLogin.json'
+    const response = await fetch(this.buildUrl(path), {
       method: 'GET',
       headers: {
         ...this.buildHeaders(),
         Accept: 'application/json',
       },
+      redirect: 'manual',
     })
 
     this.updateFromResponse(response)
-    const json = (await response.json()) as CheckLoginResponse
+    const location = response.headers.get('location')
+
+    if (response.status >= 300 && response.status < 400) {
+      if (this.isAuthRedirect(location)) {
+        return null
+      }
+
+      throw new Error(`Unexpected redirect while checking login: ${location ?? response.status}`)
+    }
+
+    const body = await response.text()
+    const errorInfo = this.extractErrorFromResponse(body, location, path)
+    if (errorInfo === '__AUTH_ERROR__') {
+      return null
+    }
+
+    if (errorInfo) {
+      throw new Error(errorInfo)
+    }
+
+    const contentType = response.headers.get('content-type') ?? ''
+    if (contentType.includes('text/html')) {
+      return null
+    }
+
+    let json: CheckLoginResponse
+    try {
+      json = JSON.parse(body) as CheckLoginResponse
+    } catch (error) {
+      throw new Error(
+        `Failed to parse checkLogin response: ${error instanceof Error ? error.message : 'unknown error'}`,
+      )
+    }
+
     const userId = json.userVO?.userId
     if (!userId) return null
     return { userId, userNm: json.userVO?.userNm ?? '' }
@@ -302,6 +341,19 @@ export class SomaHttp {
       'User-Agent': DEFAULT_USER_AGENT,
       ...(cookieHeader ? { cookie: cookieHeader } : {}),
     }
+  }
+
+  private isAuthRedirect(location: string | null): boolean {
+    if (!location) {
+      return false
+    }
+
+    return [
+      '/member/user/loginForward.do',
+      '/member/user/forLogin.do',
+      '/member/user/toLogin.do',
+      '/member/user/logout.do',
+    ].some((path) => location.includes(path))
   }
 
   private buildBody(body: Record<string, string>): Record<string, string> {
