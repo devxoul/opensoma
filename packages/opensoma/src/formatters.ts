@@ -342,7 +342,10 @@ export function parseReportDetail(html: string, id = 0): ReportDetail {
     mentorOpinion: getLabelValue(labels, '멘토 의견', '멘토의견'),
     nonAttendanceNames: getLabelValue(labels, '무단불참자'),
     etc: getLabelValue(labels, '특이사항', '기타'),
-    files: root.querySelectorAll('.file_list_new a').map((link) => cleanText(link)).filter(Boolean),
+    files: root
+      .querySelectorAll('.file_list_new a')
+      .map((link) => cleanText(link))
+      .filter(Boolean),
   })
 }
 
@@ -453,7 +456,10 @@ function extractFieldValue(node: HTMLElement | null | undefined): string {
     return normalizeEmptyValue(cleanText(inputValue))
   }
 
-  const textareaValue = node.querySelectorAll('textarea').map((element) => element.text).find(Boolean)
+  const textareaValue = node
+    .querySelectorAll('textarea')
+    .map((element) => element.text)
+    .find(Boolean)
   if (textareaValue) {
     return normalizeEmptyValue(textareaValue.replace(/\u00a0/g, ' ').trim())
   }

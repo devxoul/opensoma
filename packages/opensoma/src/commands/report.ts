@@ -3,10 +3,10 @@ import { readFile } from 'node:fs/promises'
 import { Command } from 'commander'
 
 import * as formatters from '../formatters'
-import type { ReportDetail } from '../types'
 import { handleError } from '../shared/utils/error-handler'
 import { formatOutput } from '../shared/utils/output'
 import { buildReportPayload, toRegionCode, toReportTypeCd } from '../shared/utils/swmaestro'
+import type { ReportDetail } from '../types'
 import { getHttpOrExit } from './helpers'
 
 type ListOptions = {
