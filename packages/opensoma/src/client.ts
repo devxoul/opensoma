@@ -13,6 +13,7 @@ import {
   buildMentoringPayload,
   buildReportPayload,
   buildRoomReservationPayload,
+  buildUpdateMentoringPayload,
   parseEventDetail,
   resolveRoomId,
 } from './shared/utils/swmaestro'
@@ -67,6 +68,7 @@ export class SomaClient {
       regEnd?: string
       content?: string
     }): Promise<void>
+    update(id: number, params: Parameters<typeof buildMentoringPayload>[0]): Promise<void>
     delete(id: number): Promise<void>
     apply(id: number): Promise<void>
     cancel(params: { applySn: number; qustnrSn: number }): Promise<void>
@@ -168,6 +170,13 @@ export class SomaClient {
         const html = await this.http.post('/mypage/mentoLec/insert.do', buildMentoringPayload(params))
         if (this.containsErrorIndicator(html)) {
           throw new Error(this.extractErrorMessage(html) || '멘토링 등록에 실패했습니다.')
+        }
+      },
+      update: async (id, params) => {
+        await this.requireAuth()
+        const html = await this.http.post('/mypage/mentoLec/update.do', buildUpdateMentoringPayload(id, params))
+        if (this.containsErrorIndicator(html)) {
+          throw new Error(this.extractErrorMessage(html) || '멘토링 수정에 실패했습니다.')
         }
       },
       delete: async (id) => {
