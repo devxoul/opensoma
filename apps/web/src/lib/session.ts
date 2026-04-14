@@ -7,6 +7,7 @@ export interface SessionData {
   sessionCookie: string
   csrfToken: string
   username: string
+  password: string
   isLoggedIn: boolean
 }
 

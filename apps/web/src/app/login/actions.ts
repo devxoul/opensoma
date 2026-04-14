@@ -38,6 +38,7 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     session.sessionCookie = sessionData.sessionCookie
     session.csrfToken = sessionData.csrfToken
     session.username = username
+    session.password = password
     session.isLoggedIn = true
     await session.save()
   } catch {
