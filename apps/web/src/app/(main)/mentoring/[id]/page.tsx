@@ -86,6 +86,28 @@ export default async function MentoringDetailPage({ params }: PageProps) {
           </div>
           <Separator />
           <HtmlContent content={mentoring.content} />
+          {mentoring.applicants.length > 0 ? (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <h2 className="text-sm font-semibold text-foreground">신청자 목록 ({mentoring.applicants.length}명)</h2>
+                <div className="divide-y divide-border">
+                  {mentoring.applicants.map((applicant) => (
+                    <div
+                      key={`${applicant.name}-${applicant.appliedAt}`}
+                      className="flex items-center justify-between py-2"
+                    >
+                      <span className="text-sm text-foreground">{applicant.name}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-foreground-muted">{applicant.appliedAt}</span>
+                        <StatusBadge status={applicant.status} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : null}
         </CardContent>
       </Card>
     </div>
