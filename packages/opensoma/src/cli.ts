@@ -10,6 +10,7 @@ import {
   memberCommand,
   mentoringCommand,
   noticeCommand,
+  reportCommand,
   roomCommand,
   teamCommand,
 } from './commands/index'
@@ -51,6 +52,7 @@ program.addCommand(noticeCommand)
 program.addCommand(teamCommand)
 program.addCommand(memberCommand)
 program.addCommand(eventCommand)
+program.addCommand(reportCommand)
 
 program.parse(process.argv)
 
