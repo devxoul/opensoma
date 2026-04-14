@@ -38,7 +38,8 @@ type CreateOptions = {
   exceptEnd?: string
   exceptReason?: string
   subject: string
-  content: string
+  content?: string
+  contentFile?: string
   mentorOpinion?: string
   nonAttendance?: string
   etc?: string
@@ -102,8 +103,33 @@ async function approvalAction(options: ApprovalOptions): Promise<void> {
   }
 }
 
+export async function resolveContent(
+  options: Pick<CreateOptions, 'content' | 'contentFile'>,
+  readFromStdin: () => Promise<string> = defaultReadStdin,
+): Promise<string> {
+  if (options.content === '-') {
+    return await readFromStdin()
+  }
+  if (options.content) {
+    return options.content
+  }
+  if (options.contentFile) {
+    return await readFile(options.contentFile, 'utf8')
+  }
+  throw new Error('Either --content <text> or --content-file <path> is required. Use --content - to read from stdin.')
+}
+
+async function defaultReadStdin(): Promise<string> {
+  const chunks: Buffer[] = []
+  for await (const chunk of process.stdin) {
+    chunks.push(Buffer.from(chunk))
+  }
+  return Buffer.concat(chunks).toString('utf8').trim()
+}
+
 async function createAction(options: CreateOptions): Promise<void> {
   try {
+    const content = await resolveContent(options)
     const http = await getHttpOrExit()
     const payload = buildReportPayload({
       menteeRegion: options.region as 'S' | 'B',
@@ -119,7 +145,7 @@ async function createAction(options: CreateOptions): Promise<void> {
       exceptEndTime: options.exceptEnd,
       exceptReason: options.exceptReason,
       subject: options.subject,
-      content: options.content,
+      content,
       mentorOpinion: options.mentorOpinion,
       nonAttendanceNames: options.nonAttendance,
       etc: options.etc,
@@ -177,7 +203,8 @@ export const reportCommand = new Command('report')
       .option('--except-end <HH:mm>', 'Break end time')
       .option('--except-reason <text>', 'Break reason')
       .requiredOption('--subject <text>', 'Session subject (min 10 chars)')
-      .requiredOption('--content <text>', 'Session content (min 100 chars)')
+      .option('--content <text>', 'Session content as inline text, or - to read from stdin (min 100 chars)')
+      .option('--content-file <path>', 'Read session content from a file')
       .option('--mentor-opinion <text>', 'Mentor opinion')
       .option('--non-attendance <names>', 'Non-attendance names (comma-separated)')
       .option('--etc <text>', 'Additional notes')

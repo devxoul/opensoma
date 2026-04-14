@@ -3,7 +3,6 @@
 import { useActionState, useRef, useState } from 'react'
 
 import { createReport } from '@/app/(main)/report/new/actions'
-import { RichTextEditor } from '@/components/rich-text-editor/editor'
 import { Button } from '@/ui/button'
 import { Card, CardContent, CardHeader } from '@/ui/card'
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '@/ui/collapsible'
@@ -73,7 +72,6 @@ export function ReportCreateForm() {
   const [endTime, setEndTime] = useState('')
   const [exceptStartTime, setExceptStartTime] = useState('')
   const [exceptEndTime, setExceptEndTime] = useState('')
-  const [contentHtml, setContentHtml] = useState('')
   const [fileName, setFileName] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -256,8 +254,7 @@ export function ReportCreateForm() {
             <Field name="content">
               <FieldLabel>내용</FieldLabel>
               <FieldDescription>최소 100자 이상 입력해야 합니다.</FieldDescription>
-              <input name="content" type="hidden" value={contentHtml} />
-              <RichTextEditor onUpdate={setContentHtml} />
+              <Textarea name="content" placeholder="멘토링 내용을 입력하세요" rows={8} />
             </Field>
 
             <Field name="mentorOpinion">
