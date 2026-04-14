@@ -239,6 +239,7 @@ export function buildReportPayload(options: {
   menteeRegion: 'S' | 'B'
   reportType: 'MRC010' | 'MRC020'
   progressDate: string // yyyy-mm-dd
+  title?: string
   teamNames?: string
   venue: string
   attendanceCount: number
@@ -256,20 +257,20 @@ export function buildReportPayload(options: {
   menuNo?: string
   reportId?: number
 }): Record<string, string> {
-  const { progressDate, reportType } = options
-  const [year, month, day] = progressDate.split('-')
+  const normalizedProgressDate = normalizeReportDate(options.progressDate)
+  const { reportType } = options
   const typeNames: Record<string, string> = {
     MRC010: '자유 멘토링',
     MRC020: '멘토 특강',
   }
   const typeName = typeNames[reportType] ?? reportType
-  const nttSj = `[${typeName}] ${year}년 ${month}월 ${day}일 멘토링 보고`
+  const nttSj = resolveReportTitle(options.title, normalizedProgressDate, typeName)
 
   return {
     menuNo: options.menuNo ?? '200049',
     menteeRegionCd: options.menteeRegion,
     reportGubunCd: reportType,
-    progressDt: progressDate,
+    progressDt: normalizedProgressDate,
     teamNms: options.teamNames ?? '',
     progressPlace: options.venue,
     attendanceCnt: String(options.attendanceCount),
@@ -287,4 +288,24 @@ export function buildReportPayload(options: {
     nttSj,
     ...(options.reportId !== undefined ? { reportId: String(options.reportId) } : {}),
   }
+}
+
+function resolveReportTitle(existingTitle: string | undefined, progressDate: string, typeName: string): string {
+  const normalizedTitle = existingTitle?.trim()
+  if (normalizedTitle && !normalizedTitle.includes('undefined')) {
+    return normalizedTitle
+  }
+
+  const [year, month, day] = progressDate.split('-')
+  return `[${typeName}] ${year}년 ${month}월 ${day}일 멘토링 보고`
+}
+
+function normalizeReportDate(value: string): string {
+  const normalized = value.replace(/\./g, '-').trim()
+  const match = normalized.match(/(\d{4})-(\d{2})-(\d{2})/)
+  if (match) {
+    return `${match[1]}-${match[2]}-${match[3]}`
+  }
+
+  return normalized
 }

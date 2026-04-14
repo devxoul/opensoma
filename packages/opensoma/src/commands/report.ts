@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { Command } from 'commander'
 
 import * as formatters from '../formatters'
+import type { ReportDetail } from '../types'
 import { handleError } from '../shared/utils/error-handler'
 import { formatOutput } from '../shared/utils/output'
 import { buildReportPayload, toRegionCode, toReportTypeCd } from '../shared/utils/swmaestro'
@@ -149,6 +150,22 @@ async function defaultReadStdin(): Promise<string> {
   return Buffer.concat(chunks).toString('utf8').trim()
 }
 
+function assertValidExistingReport(existing: ReportDetail, id: string): void {
+  const hasMeaningfulData = [
+    existing.title,
+    existing.subject,
+    existing.content,
+    existing.progressDate,
+    existing.author,
+    existing.menteeRegion,
+    existing.reportType,
+  ].some(Boolean)
+
+  if (!hasMeaningfulData) {
+    throw new Error(`Unable to load report ${id} for a safe partial update. Refusing to submit blank fields.`)
+  }
+}
+
 async function createAction(options: CreateOptions): Promise<void> {
   try {
     const content = await resolveContent(options)
@@ -199,11 +216,13 @@ async function updateAction(id: string, options: UpdateOptions): Promise<void> {
       reportId: id,
     })
     const existing = formatters.parseReportDetail(html, Number(id))
+    assertValidExistingReport(existing, id)
 
     const payload = buildReportPayload({
       menteeRegion: (options.region as 'S' | 'B') ?? toRegionCode(existing.menteeRegion),
       reportType: (options.type as 'MRC010' | 'MRC020') ?? toReportTypeCd(existing.reportType),
       progressDate: options.date ?? existing.progressDate,
+      title: existing.title,
       teamNames: options.team ?? existing.teamNames,
       venue: options.venue ?? existing.venue,
       attendanceCount: options.attendanceCount
