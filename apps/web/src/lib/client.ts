@@ -2,6 +2,8 @@ import { AuthenticationError, SomaClient } from '@/lib/sdk'
 import { getSession } from '@/lib/session'
 
 const NOT_AUTHENTICATED_MESSAGE = 'Not authenticated'
+const AUTH_RECOVERY_ATTEMPTS = 2
+const AUTH_RECOVERY_DELAY_MS = 250
 
 type SessionLike = {
   isLoggedIn?: boolean
@@ -22,12 +24,7 @@ export async function validateClientSession<T extends Pick<SomaClient, 'getSessi
 
   let isValid = await client.isLoggedIn()
   if (!isValid && session.username && session.password) {
-    try {
-      await client.login()
-      isValid = await client.isLoggedIn()
-    } catch {
-      throw new AuthenticationError(NOT_AUTHENTICATED_MESSAGE)
-    }
+    isValid = await retryLogin(client)
 
     if (isValid) {
       const sessionData = client.getSessionData()
@@ -47,6 +44,29 @@ export async function validateClientSession<T extends Pick<SomaClient, 'getSessi
   }
 
   return client
+}
+
+async function retryLogin(client: Pick<SomaClient, 'isLoggedIn' | 'login'>): Promise<boolean> {
+  for (let attempt = 1; attempt <= AUTH_RECOVERY_ATTEMPTS; attempt += 1) {
+    try {
+      await client.login()
+      if (await client.isLoggedIn()) {
+        return true
+      }
+    } catch {
+      // Retry once before forcing a logout because SWMaestro can transiently reject re-auth.
+    }
+
+    if (attempt < AUTH_RECOVERY_ATTEMPTS) {
+      await delay(AUTH_RECOVERY_DELAY_MS)
+    }
+  }
+
+  return false
+}
+
+async function delay(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 export async function createClient(): Promise<SomaClient> {

@@ -19,6 +19,19 @@ function wrapWithAuthGuard(client: SomaClient): SomaClient {
               return await (method as (...a: unknown[]) => Promise<unknown>).apply(nsTarget, args)
             } catch (error) {
               if (error instanceof AuthenticationError) {
+                const recoveredMethod = await recoverClientMethod(prop, nsProp)
+                if (recoveredMethod) {
+                  try {
+                    return await recoveredMethod(...args)
+                  } catch (retryError) {
+                    if (retryError instanceof AuthenticationError) {
+                      redirect('/logout')
+                    }
+
+                    throw retryError
+                  }
+                }
+
                 redirect('/logout')
               }
               throw error
@@ -32,7 +45,7 @@ function wrapWithAuthGuard(client: SomaClient): SomaClient {
 
 export async function requireAuth(): Promise<SomaClient> {
   try {
-    const client = await createClient()
+    const client = await createClientWithRecovery()
     return wrapWithAuthGuard(client)
   } catch (error) {
     if (error instanceof AuthenticationError) {
@@ -40,4 +53,35 @@ export async function requireAuth(): Promise<SomaClient> {
     }
     throw error
   }
+}
+
+async function createClientWithRecovery(): Promise<SomaClient> {
+  try {
+    return await createClient()
+  } catch (error) {
+    if (!(error instanceof AuthenticationError)) {
+      throw error
+    }
+
+    return createClient()
+  }
+}
+
+async function recoverClientMethod(
+  prop: string | symbol,
+  nsProp: string | symbol,
+): Promise<((...args: unknown[]) => Promise<unknown>) | null> {
+  const recoveredClient = await createClientWithRecovery()
+  const recoveredNamespace = Reflect.get(recoveredClient, prop)
+  if (typeof recoveredNamespace !== 'object' || recoveredNamespace === null) {
+    return null
+  }
+
+  const recoveredMethod = Reflect.get(recoveredNamespace as Record<string, unknown>, nsProp)
+  if (typeof recoveredMethod !== 'function') {
+    return null
+  }
+
+  return (...args: unknown[]) =>
+    (recoveredMethod as (...a: unknown[]) => Promise<unknown>).apply(recoveredNamespace, args)
 }

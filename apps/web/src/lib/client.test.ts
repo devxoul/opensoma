@@ -49,4 +49,35 @@ describe('validateClientSession', () => {
       ),
     ).resolves.toBe(client)
   })
+
+  it('retries upstream re-login once before failing', async () => {
+    let loginAttempts = 0
+    const session = {
+      isLoggedIn: true,
+      sessionCookie: 'stale-session-cookie',
+      csrfToken: 'stale-csrf-token',
+      username: 'devxoul@gmail.com',
+      password: 'password',
+      save: async () => {},
+    }
+
+    const client = {
+      isLoggedIn: async () => loginAttempts > 0,
+      login: async () => {
+        loginAttempts += 1
+        if (loginAttempts === 1) {
+          throw new Error('temporary upstream failure')
+        }
+      },
+      getSessionData: () => ({
+        sessionCookie: 'fresh-session-cookie',
+        csrfToken: 'fresh-csrf-token',
+      }),
+    }
+
+    await expect(validateClientSession(session, client)).resolves.toBe(client)
+    expect(loginAttempts).toBe(2)
+    expect(session.sessionCookie).toBe('fresh-session-cookie')
+    expect(session.csrfToken).toBe('fresh-csrf-token')
+  })
 })
