@@ -344,10 +344,12 @@ export class SomaClient {
       update: async (id, options, file, fileName) => {
         await this.requireAuth()
         const existing = await this.report.get(id)
+        assertValidExistingReport(existing, id)
         const payload = buildReportPayload({
           menteeRegion: options.menteeRegion ?? toRegionCode(existing.menteeRegion),
           reportType: options.reportType ?? toReportTypeCd(existing.reportType),
           progressDate: options.progressDate ?? existing.progressDate,
+          title: existing.title,
           teamNames: options.teamNames ?? existing.teamNames,
           venue: options.venue ?? existing.venue,
           attendanceCount: options.attendanceCount ?? existing.attendanceCount,
@@ -528,5 +530,21 @@ export class SomaClient {
       return errorDivMatch[1].trim()
     }
     return null
+  }
+}
+
+function assertValidExistingReport(existing: ReportDetail, id: number): void {
+  const hasMeaningfulData = [
+    existing.title,
+    existing.subject,
+    existing.content,
+    existing.progressDate,
+    existing.author,
+    existing.menteeRegion,
+    existing.reportType,
+  ].some(Boolean)
+
+  if (!hasMeaningfulData) {
+    throw new Error(`Unable to load report ${id} for a safe partial update. Refusing to submit blank fields.`)
   }
 }
