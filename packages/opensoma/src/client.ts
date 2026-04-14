@@ -16,6 +16,8 @@ import {
   buildUpdateMentoringPayload,
   parseEventDetail,
   resolveRoomId,
+  toRegionCode,
+  toReportTypeCd,
 } from './shared/utils/swmaestro'
 import type {
   ApplicationHistoryItem,
@@ -31,6 +33,7 @@ import type {
   ReportCreateOptions,
   ReportDetail,
   ReportListItem,
+  ReportUpdateOptions,
   RoomCard,
   TeamInfo,
 } from './types'
@@ -105,6 +108,12 @@ export class SomaClient {
     }): Promise<{ items: ReportListItem[]; pagination: Pagination }>
     get(id: number): Promise<ReportDetail>
     create(options: ReportCreateOptions, file: Buffer | string, fileName?: string): Promise<void>
+    update(
+      id: number,
+      options: Omit<ReportUpdateOptions, 'id'>,
+      file?: Buffer | string,
+      fileName?: string,
+    ): Promise<void>
     approval(options?: {
       page?: number
       month?: string
@@ -331,6 +340,44 @@ export class SomaClient {
         formData.append('fileFieldNm_1', 'file_1')
         formData.append('atchFileId', '')
         await this.http.postMultipart('/mypage/mentoringReport/insert.do', formData)
+      },
+      update: async (id, options, file, fileName) => {
+        await this.requireAuth()
+        const existing = await this.report.get(id)
+        const payload = buildReportPayload({
+          menteeRegion: options.menteeRegion ?? toRegionCode(existing.menteeRegion),
+          reportType: options.reportType ?? toReportTypeCd(existing.reportType),
+          progressDate: options.progressDate ?? existing.progressDate,
+          teamNames: options.teamNames ?? existing.teamNames,
+          venue: options.venue ?? existing.venue,
+          attendanceCount: options.attendanceCount ?? existing.attendanceCount,
+          attendanceNames: options.attendanceNames ?? existing.attendanceNames,
+          progressStartTime: options.progressStartTime ?? existing.progressStartTime,
+          progressEndTime: options.progressEndTime ?? existing.progressEndTime,
+          exceptStartTime: options.exceptStartTime ?? existing.exceptStartTime,
+          exceptEndTime: options.exceptEndTime ?? existing.exceptEndTime,
+          exceptReason: options.exceptReason ?? existing.exceptReason,
+          subject: options.subject ?? existing.subject,
+          content: options.content ?? existing.content,
+          mentorOpinion: options.mentorOpinion ?? existing.mentorOpinion,
+          nonAttendanceNames: options.nonAttendanceNames ?? existing.nonAttendanceNames,
+          etc: options.etc ?? existing.etc,
+          reportId: id,
+        })
+        const formData = new FormData()
+        for (const [key, value] of Object.entries(payload)) {
+          formData.append(key, value)
+        }
+        if (file) {
+          const isBuffer = Buffer.isBuffer(file)
+          const fileBuffer = isBuffer ? file : await readFile(file)
+          const resolvedFileName = isBuffer ? (fileName ?? 'file') : (file.split('/').pop() ?? 'file')
+          const uint8Array = new Uint8Array(fileBuffer.buffer, fileBuffer.byteOffset, fileBuffer.byteLength)
+          formData.append('file_1_1', new Blob([uint8Array as unknown as ArrayBuffer]), resolvedFileName)
+          formData.append('fileFieldNm_1', 'file_1')
+          formData.append('atchFileId', '')
+        }
+        await this.http.postMultipart('/mypage/mentoringReport/update.do', formData)
       },
       approval: async (options) => {
         await this.requireAuth()

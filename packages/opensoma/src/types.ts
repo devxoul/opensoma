@@ -217,3 +217,8 @@ export const ReportCreateOptionsSchema = z.object({
   etc: z.string().optional(),
 })
 export type ReportCreateOptions = z.infer<typeof ReportCreateOptionsSchema>
+
+export const ReportUpdateOptionsSchema = ReportCreateOptionsSchema.partial().extend({
+  id: z.number(),
+})
+export type ReportUpdateOptions = z.infer<typeof ReportUpdateOptionsSchema>
