@@ -91,6 +91,14 @@ describe('SomaClient', () => {
       venue: '온라인(Webex)',
       maxAttendees: 10,
     })
+    await client.mentoring.update(42, {
+      title: '수정된 멘토링',
+      type: 'public',
+      date: '2026-05-01',
+      startTime: '14:00',
+      endTime: '15:00',
+      venue: '오프라인',
+    })
     await client.mentoring.delete(7)
     await client.mentoring.apply(8)
     await client.mentoring.cancel({ applySn: 9, qustnrSn: 10 })
@@ -104,6 +112,7 @@ describe('SomaClient', () => {
 
     expect(calls.map((call) => call.path)).toEqual([
       '/mypage/mentoLec/insert.do',
+      '/mypage/mentoLec/update.do',
       '/mypage/mentoLec/delete.do',
       '/application/application/application.do',
       '/mypage/userAnswer/cancel.do',
@@ -115,30 +124,36 @@ describe('SomaClient', () => {
       reportCd: 'MRC020',
       qustnrSj: '새 멘토링',
     })
-    expect(calls[1]?.data).toEqual({
+    expect(calls[1]?.data).toMatchObject({
+      menuNo: MENU_NO.MENTORING,
+      reportCd: 'MRC010',
+      qustnrSj: '수정된 멘토링',
+      qustnrSn: '42',
+    })
+    expect(calls[2]?.data).toEqual({
       menuNo: MENU_NO.MENTORING,
       qustnrSn: '7',
       pageQueryString: '',
     })
-    expect(calls[2]?.data).toEqual({
+    expect(calls[3]?.data).toEqual({
       menuNo: MENU_NO.EVENT,
       qustnrSn: '8',
       applyGb: 'C',
       stepHeader: '0',
     })
-    expect(calls[3]?.data).toEqual({
+    expect(calls[4]?.data).toEqual({
       menuNo: MENU_NO.APPLICATION_HISTORY,
       applySn: '9',
       qustnrSn: '10',
     })
-    expect(calls[4]?.data).toMatchObject({
+    expect(calls[5]?.data).toMatchObject({
       menuNo: MENU_NO.ROOM,
       itemId: '17',
       title: '회의',
       'time[0]': '10:00',
       'time[1]': '10:30',
     })
-    expect(calls[5]?.data).toEqual({
+    expect(calls[6]?.data).toEqual({
       menuNo: MENU_NO.EVENT,
       qustnrSn: '11',
       applyGb: 'C',
@@ -329,6 +344,16 @@ describe('SomaClient', () => {
     await expect(client.mentoring.get(1)).rejects.toBeInstanceOf(AuthenticationError)
     await expect(
       client.mentoring.create({
+        title: 'Test',
+        type: 'public',
+        date: '2026-04-01',
+        startTime: '10:00',
+        endTime: '11:00',
+        venue: 'Test',
+      }),
+    ).rejects.toBeInstanceOf(AuthenticationError)
+    await expect(
+      client.mentoring.update(1, {
         title: 'Test',
         type: 'public',
         date: '2026-04-01',

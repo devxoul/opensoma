@@ -10,6 +10,7 @@ import {
   buildCancelApplicationPayload,
   buildDeleteMentoringPayload,
   buildMentoringPayload,
+  buildUpdateMentoringPayload,
 } from '../shared/utils/swmaestro'
 import { getHttpOrExit } from './helpers'
 
@@ -22,6 +23,19 @@ type ListOptions = {
 }
 type GetOptions = { pretty?: boolean }
 type CreateOptions = {
+  title: string
+  type: 'public' | 'lecture'
+  date: string
+  start: string
+  end: string
+  venue: string
+  maxAttendees?: string
+  regStart?: string
+  regEnd?: string
+  content?: string
+  pretty?: boolean
+}
+type UpdateOptions = {
   title: string
   type: 'public' | 'lecture'
   date: string
@@ -85,6 +99,30 @@ async function createAction(options: CreateOptions): Promise<void> {
     await http.post(
       '/mypage/mentoLec/insert.do',
       buildMentoringPayload({
+        title: options.title,
+        type: options.type,
+        date: options.date,
+        startTime: options.start,
+        endTime: options.end,
+        venue: options.venue,
+        maxAttendees: options.maxAttendees ? Number.parseInt(options.maxAttendees, 10) : undefined,
+        regStart: options.regStart,
+        regEnd: options.regEnd,
+        content: options.content,
+      }),
+    )
+    console.log(formatOutput({ ok: true }, options.pretty))
+  } catch (error) {
+    handleError(error)
+  }
+}
+
+async function updateAction(id: string, options: UpdateOptions): Promise<void> {
+  try {
+    const http = await getHttpOrExit()
+    await http.post(
+      '/mypage/mentoLec/update.do',
+      buildUpdateMentoringPayload(Number.parseInt(id, 10), {
         title: options.title,
         type: options.type,
         date: options.date,
@@ -194,6 +232,23 @@ export const mentoringCommand = new Command('mentoring')
       .option('--content <html>', 'HTML content')
       .option('--pretty', 'Pretty print JSON output')
       .action(createAction),
+  )
+  .addCommand(
+    new Command('update')
+      .description('Update a mentoring session')
+      .argument('<id>')
+      .requiredOption('--title <title>', 'Title')
+      .requiredOption('--type <type>', 'Mentoring type (public|lecture)')
+      .requiredOption('--date <date>', 'Session date')
+      .requiredOption('--start <time>', 'Start time')
+      .requiredOption('--end <time>', 'End time')
+      .requiredOption('--venue <venue>', 'Venue')
+      .option('--max-attendees <count>', 'Maximum attendees')
+      .option('--reg-start <date>', 'Registration start date')
+      .option('--reg-end <date>', 'Registration end date')
+      .option('--content <html>', 'HTML content')
+      .option('--pretty', 'Pretty print JSON output')
+      .action(updateAction),
   )
   .addCommand(
     new Command('delete')
