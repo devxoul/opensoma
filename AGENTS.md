@@ -62,27 +62,13 @@ npm consumers run compiled JS via Node.js. The `prepublishOnly` script runs the 
 
 ## Release
 
-To publish a new version to npm:
-
-1. Bump version in `packages/opensoma/package.json`
-2. Run `bun run build` to verify the build succeeds
-3. Run `npm publish` from `packages/opensoma/` directory (triggers `prepublishOnly` → build + rewrite bin paths, then `postpublish` → restore `package.json`)
+Use the **Release** GitHub Actions workflow (`workflow_dispatch`). It typechecks, lints, tests, bumps version in `package.json` / `README.md` / `.claude-plugin/plugin.json` / `skills/*/SKILL.md`, commits, tags, publishes to npm with provenance, and creates a GitHub Release.
 
 ```bash
-cd packages/opensoma
-npm publish
+gh workflow run release.yml -f version=0.3.0
 ```
 
 Tags have no `v` prefix.
-
-### First-time Publish
-
-If the package doesn't exist on npm yet, use:
-
-```bash
-cd packages/opensoma
-npm publish --access public
-```
 
 ### Version Decision
 
