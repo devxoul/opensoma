@@ -23,7 +23,17 @@ export default async function RoomPage({
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-foreground">회의실 예약</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-foreground">회의실 예약</h1>
+          <a
+            href="http://partner.toz.co.kr/partner/reservation/fkii3/swmaestro/index.htm"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-primary hover:underline"
+          >
+            외부 회의실 예약 →
+          </a>
+        </div>
         <p className="text-sm text-foreground-muted">날짜별 회의실 현황을 조회하고 원하는 시간대를 예약하세요.</p>
       </div>
 
