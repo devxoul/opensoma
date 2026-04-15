@@ -23,10 +23,7 @@ function wrapWithAuthGuard(client: SomaClient): SomaClient {
                 try {
                   recoveredMethod = await recoverClientMethod(prop, nsProp)
                 } catch (recoveryError) {
-                  if (recoveryError instanceof AuthenticationError) {
-                    redirect('/logout')
-                  }
-
+                  redirectOnAuthenticationError(recoveryError)
                   throw recoveryError
                 }
 
@@ -34,10 +31,7 @@ function wrapWithAuthGuard(client: SomaClient): SomaClient {
                   try {
                     return await recoveredMethod(...args)
                   } catch (retryError) {
-                    if (retryError instanceof AuthenticationError) {
-                      redirect('/logout')
-                    }
-
+                    redirectOnAuthenticationError(retryError)
                     throw retryError
                   }
                 }
@@ -62,6 +56,12 @@ export async function requireAuth(): Promise<SomaClient> {
       redirect('/logout')
     }
     throw error
+  }
+}
+
+function redirectOnAuthenticationError(error: unknown): void {
+  if (error instanceof AuthenticationError) {
+    redirect('/logout')
   }
 }
 
