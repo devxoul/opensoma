@@ -161,7 +161,7 @@ COOKIE=$(cat ~/.config/opensoma/credentials.json | bun -e "
 agent-browser open https://www.swmaestro.ai/sw/main/main.do
 
 # 3. Get the CDP page WebSocket URL
-CDP_PORT=$(agent-browser get cdp-url | grep -oE '[0-9]+' | head -1)
+CDP_PORT=$(agent-browser get cdp-url | sed -n 's|.*://[^:]*:\([0-9]*\)/.*|\1|p')
 PAGE_WS=$(curl -s http://127.0.0.1:$CDP_PORT/json | bun -e "
   const d = JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
   console.log(d.find(t => t.type === 'page')?.webSocketDebuggerUrl || '');
