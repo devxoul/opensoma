@@ -134,6 +134,14 @@ export class SomaHttp {
     return finalBody
   }
 
+  async postForm(path: string, body: Record<string, string>): Promise<string> {
+    const formData = new FormData()
+    for (const [key, value] of Object.entries(body)) {
+      formData.append(key, value)
+    }
+    return this.postMultipart(path, formData)
+  }
+
   async postMultipart(path: string, formData: FormData): Promise<string> {
     const url = this.buildUrl(path)
 

@@ -209,6 +209,41 @@ describe('SomaHttp', () => {
     })
   })
 
+  describe('postForm', () => {
+    test('converts Record to FormData and delegates to postMultipart', async () => {
+      const fetchMock = mock(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const body = init?.body
+        expect(body).toBeInstanceOf(FormData)
+        const fd = body as FormData
+        expect(fd.get('title')).toBe('테스트')
+        expect(fd.get('qestnarCn')).toBe('<p>멘토링 내용</p>')
+        expect(fd.get('csrfToken')).toBe('csrf-1')
+        return createResponse('<html>ok</html>')
+      })
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+      await expect(
+        http.postForm('/mypage/mentoLec/insert.do', { title: '테스트', qestnarCn: '<p>멘토링 내용</p>' }),
+      ).resolves.toBe('<html>ok</html>')
+    })
+
+    test('does not set Content-Type header (lets FormData set multipart boundary)', async () => {
+      const fetchMock = mock(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const headers = init?.headers as Record<string, string> | undefined
+        expect(headers?.['Content-Type']).toBeUndefined()
+        expect(headers?.['content-type']).toBeUndefined()
+        return createResponse('<html>ok</html>')
+      })
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+      await http.postForm('/test', { key: 'value' })
+    })
+  })
+
   test('postJson returns parsed json', async () => {
     const fetchMock = mock(async (_input: RequestInfo | URL, init?: RequestInit) => {
       expect(init?.headers).toEqual({

@@ -97,7 +97,7 @@ async function getAction(id: string, options: GetOptions): Promise<void> {
 async function createAction(options: CreateOptions): Promise<void> {
   try {
     const http = await getHttpOrExit()
-    await http.post(
+    await http.postForm(
       '/mypage/mentoLec/insert.do',
       buildMentoringPayload({
         title: options.title,
@@ -128,7 +128,7 @@ async function updateAction(id: string, options: UpdateOptions): Promise<void> {
     })
     const existing = formatters.parseMentoringDetail(html, numId)
 
-    await http.post(
+    await http.postForm(
       '/mypage/mentoLec/update.do',
       buildUpdateMentoringPayload(numId, {
         title: options.title ?? existing.title,

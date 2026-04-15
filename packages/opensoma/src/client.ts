@@ -178,7 +178,7 @@ export class SomaClient {
       },
       create: async (params) => {
         await this.requireAuth()
-        const html = await this.http.post('/mypage/mentoLec/insert.do', buildMentoringPayload(params))
+        const html = await this.http.postForm('/mypage/mentoLec/insert.do', buildMentoringPayload(params))
         if (this.containsErrorIndicator(html)) {
           throw new Error(this.extractErrorMessage(html) || '멘토링 등록에 실패했습니다.')
         }
@@ -198,7 +198,7 @@ export class SomaClient {
           regEnd: params.regEnd ?? existing.registrationPeriod.end,
           content: params.content ?? existing.content,
         })
-        const html = await this.http.post('/mypage/mentoLec/update.do', merged)
+        const html = await this.http.postForm('/mypage/mentoLec/update.do', merged)
         if (this.containsErrorIndicator(html)) {
           throw new Error(this.extractErrorMessage(html) || '멘토링 수정에 실패했습니다.')
         }
