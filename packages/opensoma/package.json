@@ -5,7 +5,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/devxoul/opensoma.git"
+    "url": "git+https://github.com/opensoma/opensoma.git"
   },
   "bin": {
     "opensoma": "dist/src/cli.js"
