@@ -60,6 +60,9 @@ export class SomaHttp {
     if (errorInfo === '__AUTH_ERROR__') {
       throw new AuthenticationError()
     }
+    if (errorInfo) {
+      throw new Error(errorInfo)
+    }
 
     return body
   }
@@ -203,6 +206,23 @@ export class SomaHttp {
     return finalBody
   }
 
+  private extractJsonError(body: string): string | null {
+    if (!body.trimStart().startsWith('{')) return null
+    try {
+      const json = JSON.parse(body) as Record<string, unknown>
+      if (typeof json.error === 'string') {
+        return this.isSessionExpiredError(json.error) ? '__AUTH_ERROR__' : json.error
+      }
+    } catch {
+      // Not valid JSON
+    }
+    return null
+  }
+
+  private isSessionExpiredError(message: string): boolean {
+    return message.includes('세션') && /초기화|만료|유효하지/.test(message)
+  }
+
   private extractErrorFromResponse(body: string, location: string | null, path?: string): string | null {
     this.log(
       'extractErrorFromResponse',
@@ -213,9 +233,15 @@ export class SomaHttp {
       body.match(/<title>([^<]*)<\/title>/)?.[1],
     )
 
+    const jsonError = this.extractJsonError(body)
+    if (jsonError) return jsonError
+
     const alertMatch = body.match(/<script\b[^>]*>\s*alert\(['"](.+?)['"]\);?\s*(history\.|location\.)/i)
     if (alertMatch) {
       this.log('Found alert match:', alertMatch[1])
+      if (this.isSessionExpiredError(alertMatch[1])) {
+        return '__AUTH_ERROR__'
+      }
       return alertMatch[1]
     }
 
@@ -284,7 +310,17 @@ export class SomaHttp {
     })
 
     this.updateFromResponse(response)
-    return (await response.json()) as T
+    const text = await response.text()
+
+    const errorInfo = this.extractErrorFromResponse(text, null, path)
+    if (errorInfo === '__AUTH_ERROR__') {
+      throw new AuthenticationError()
+    }
+    if (errorInfo) {
+      throw new Error(errorInfo)
+    }
+
+    return JSON.parse(text) as T
   }
 
   async login(username: string, password: string): Promise<void> {

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test'
 
 import { MENU_NO } from './constants'
+import { AuthenticationError } from './errors'
 import { SomaHttp } from './http'
 
 const originalFetch = globalThis.fetch
@@ -352,6 +353,185 @@ describe('SomaHttp', () => {
 
     await expect(http.extractCsrfToken()).resolves.toBe('csrf-token')
     expect(http.getCsrfToken()).toBe('csrf-token')
+  })
+
+  describe('session-expired alert errors', () => {
+    function sessionExpiredAlert(message: string): string {
+      return `<html><head></head><body><script language='JavaScript'>\nalert('${message}');\nhistory.back();\n</script></body></html>`
+    }
+
+    const expiredMessage = '잘못된 접근입니다. 해당 세션을 전체 초기화 하였습니다.'
+
+    test('post throws AuthenticationError for session-expired alert', async () => {
+      const fetchMock = mock(async () => createResponse(sessionExpiredAlert(expiredMessage)))
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+      await expect(http.post('/mypage/officeMng/list.do', { menuNo: '200058' })).rejects.toThrow(AuthenticationError)
+    })
+
+    test('get throws AuthenticationError for session-expired alert', async () => {
+      const fetchMock = mock(async () => createResponse(sessionExpiredAlert(expiredMessage)))
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1' })
+
+      await expect(http.get('/mypage/officeMng/list.do')).rejects.toThrow(AuthenticationError)
+    })
+
+    test('postMultipart throws AuthenticationError for session-expired alert', async () => {
+      const fetchMock = mock(async () => createResponse(sessionExpiredAlert(expiredMessage)))
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+      await expect(http.postMultipart('/mypage/test.do', new FormData())).rejects.toThrow(AuthenticationError)
+    })
+
+    test('alert with 세션 + invalidation keyword variants are treated as auth error', async () => {
+      const variants = ['세션이 만료되었습니다.', '해당 세션을 초기화하였습니다.', '세션 정보가 유효하지 않습니다.']
+
+      for (const message of variants) {
+        const fetchMock = mock(async () => createResponse(sessionExpiredAlert(message)))
+        globalThis.fetch = fetchMock as typeof fetch
+
+        const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+        await expect(http.post('/test', {})).rejects.toThrow(AuthenticationError)
+      }
+    })
+
+    test('alert containing 세션 without invalidation keyword is not treated as auth error', async () => {
+      const fetchMock = mock(async () => createResponse(sessionExpiredAlert('멘토링 세션이 이미 마감되었습니다.')))
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+      await expect(http.post('/mypage/test.do', {})).rejects.toThrow('멘토링 세션이 이미 마감되었습니다.')
+    })
+
+    test('non-session alert still throws regular Error', async () => {
+      const fetchMock = mock(async () => createResponse(sessionExpiredAlert('잘못된 접근입니다.')))
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+      await expect(http.post('/mypage/test.do', {})).rejects.toThrow('잘못된 접근입니다.')
+    })
+
+    test('get throws regular Error for non-session alert', async () => {
+      const fetchMock = mock(async () => createResponse(sessionExpiredAlert('잘못된 접근입니다.')))
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1' })
+
+      await expect(http.get('/mypage/test.do')).rejects.toThrow('잘못된 접근입니다.')
+    })
+
+    test('session-expired alert with double quotes is detected', async () => {
+      const doubleQuoteAlert = `<html><body><script language='JavaScript'>\nalert("${expiredMessage}");\nhistory.back();\n</script></body></html>`
+      const fetchMock = mock(async () => createResponse(doubleQuoteAlert))
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+      await expect(http.post('/mypage/test.do', {})).rejects.toThrow(AuthenticationError)
+    })
+  })
+
+  describe('JSON error responses', () => {
+    const sessionExpiredJson = JSON.stringify({
+      error: '잘못된 접근입니다. 해당 세션을 전체 초기화 하였습니다.',
+    })
+    const genericErrorJson = JSON.stringify({ error: '처리 중 오류가 발생했습니다.' })
+
+    test('post throws AuthenticationError for session-expired JSON', async () => {
+      const fetchMock = mock(async () => createResponse(sessionExpiredJson, [], 'application/json'))
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+      await expect(http.post('/mypage/officeMng/list.do', { menuNo: '200058' })).rejects.toThrow(AuthenticationError)
+    })
+
+    test('post throws Error for non-session JSON error', async () => {
+      const fetchMock = mock(async () => createResponse(genericErrorJson, [], 'application/json'))
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+      await expect(http.post('/mypage/test.do', {})).rejects.toThrow('처리 중 오류가 발생했습니다.')
+    })
+
+    test('postJson throws AuthenticationError for session-expired JSON', async () => {
+      const fetchMock = mock(async () => createResponse(sessionExpiredJson, [], 'application/json'))
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+      await expect(http.postJson('/mypage/officeMng/rentTime.do', { itemId: '17' })).rejects.toThrow(
+        AuthenticationError,
+      )
+    })
+
+    test('postJson throws Error for non-session JSON error', async () => {
+      const fetchMock = mock(async () => createResponse(genericErrorJson, [], 'application/json'))
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+      await expect(http.postJson('/mypage/test.do', {})).rejects.toThrow('처리 중 오류가 발생했습니다.')
+    })
+
+    test('postJson still parses valid JSON when no error field', async () => {
+      const fetchMock = mock(async () =>
+        createResponse(JSON.stringify({ resultCode: 'SUCCESS' }), [], 'application/json'),
+      )
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+      await expect(http.postJson('/mypage/test.do', {})).resolves.toEqual({ resultCode: 'SUCCESS' })
+    })
+
+    test('non-JSON body starting with { does not false-positive', async () => {
+      const fetchMock = mock(async () => createResponse('{malformed json', [], 'text/html'))
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1' })
+
+      await expect(http.get('/test')).resolves.toBe('{malformed json')
+    })
+
+    test('JSON error with leading whitespace is still detected', async () => {
+      const paddedJson = `  \n  ${sessionExpiredJson}`
+      const fetchMock = mock(async () => createResponse(paddedJson, [], 'application/json'))
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+      await expect(http.post('/mypage/test.do', {})).rejects.toThrow(AuthenticationError)
+    })
+
+    test('get throws Error for non-session JSON error', async () => {
+      const fetchMock = mock(async () => createResponse(genericErrorJson, [], 'application/json'))
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1' })
+
+      await expect(http.get('/mypage/test.do')).rejects.toThrow('처리 중 오류가 발생했습니다.')
+    })
+
+    test('postJson throws AuthenticationError for HTML login page response', async () => {
+      const loginPageHtml =
+        '<html><head><title>AI·SW마에스트로</title></head><body><form><input name="username"><input name="password"></form></body></html>'
+      const fetchMock = mock(async () => createResponse(loginPageHtml))
+      globalThis.fetch = fetchMock as typeof fetch
+
+      const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+      await expect(http.postJson('/mypage/officeMng/rentTime.do', {})).rejects.toThrow(AuthenticationError)
+    })
   })
 })
 
