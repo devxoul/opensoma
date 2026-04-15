@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import type { SessionData } from '@/lib/session'
 import { sessionOptions } from '@/lib/session-options'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const response = NextResponse.next()
   const session = await getIronSession<SessionData>(request, response, sessionOptions)
 
