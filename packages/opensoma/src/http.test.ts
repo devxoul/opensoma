@@ -67,6 +67,43 @@ describe('SomaHttp', () => {
     )
   })
 
+  test('post surfaces alert errors followed by history.back()', async () => {
+    const fetchMock = mock(async () =>
+      createResponse(
+        `<html><head></head><body><script language='JavaScript'>\nalert('잘못된 접근입니다.');\nhistory.back();\n</script></body></html>`,
+      ),
+    )
+    globalThis.fetch = fetchMock as typeof fetch
+
+    const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+    await expect(http.post('/mypage/test.do', {})).rejects.toThrow('잘못된 접근입니다.')
+  })
+
+  test('post ignores alert() inside function bodies (form validation scripts)', async () => {
+    const pageWithValidationScript = `<html><head><title>AI·SW마에스트로 서울</title></head><body>
+      <ul class="bbs-reserve"><li class="item">room data</li></ul>
+      <script>
+      function fn_search() {
+        var searchWrd = document.getElementById('searchWrd');
+        if (searchWrd.value == '') {
+          alert('검색어를 입력하세요.');
+          return;
+        }
+        document.forms[0].submit();
+      }
+      </script>
+    </body></html>`
+
+    const fetchMock = mock(async () => createResponse(pageWithValidationScript))
+    globalThis.fetch = fetchMock as typeof fetch
+
+    const http = new SomaHttp({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
+
+    const html = await http.post('/mypage/officeMng/list.do', { menuNo: '200058' })
+    expect(html).toContain('room data')
+  })
+
   describe('postMultipart', () => {
     test('passes FormData to fetch', async () => {
       const fetchMock = mock(async (_input: RequestInfo | URL, init?: RequestInit) => {
