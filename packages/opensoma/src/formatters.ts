@@ -316,6 +316,18 @@ export function parseReportDetail(html: string, id = 0): ReportDetail {
     }
   }
 
+  const findGroupTextarea = (...names: string[]): string => {
+    for (const group of root.querySelectorAll('.group')) {
+      const label = cleanText(group.querySelector('strong.t')).replace(/:$/, '')
+      if (names.includes(label)) {
+        const textarea = group.querySelector('textarea')
+        if (textarea) return textarea.text.trim()
+        return cleanText(group.querySelector('.c'))
+      }
+    }
+    return ''
+  }
+
   const files = root
     .querySelectorAll('.file_list_new a')
     .map((a) => a.getAttribute('href') || '')
@@ -332,7 +344,7 @@ export function parseReportDetail(html: string, id = 0): ReportDetail {
     createdAt: labels['등록일'] || '',
     acceptedTime: labels['인정시간'] || '',
     payAmount: labels['지급액'] || '',
-    content: labels['추진내용'] || labels['추진 내용'] || '',
+    content: findGroupTextarea('추진내용', '추진 내용') || labels['추진내용'] || labels['추진 내용'] || '',
     subject,
     menteeRegion: labels['멘토링대상'] || labels['멘토링 대상'] || '',
     reportType: labels['구분'] || '',
@@ -345,9 +357,9 @@ export function parseReportDetail(html: string, id = 0): ReportDetail {
     exceptStartTime: exceptTimeMatch?.[1] || '',
     exceptEndTime: exceptTimeMatch?.[2] || '',
     exceptReason: labels['제외사유'] || labels['제외 사유'] || labels['제외이유'] || '',
-    mentorOpinion: labels['멘토의견'] || labels['멘토 의견'] || '',
+    mentorOpinion: findGroupTextarea('멘토의견', '멘토 의견') || labels['멘토의견'] || labels['멘토 의견'] || '',
     nonAttendanceNames: labels['무단불참자'] || '',
-    etc: labels['기타'] || labels['특이사항'] || '',
+    etc: findGroupTextarea('기타', '특이사항') || labels['기타'] || labels['특이사항'] || '',
     files,
   })
 }
