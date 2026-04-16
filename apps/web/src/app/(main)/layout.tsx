@@ -14,11 +14,11 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       <div className="flex min-h-screen bg-background">
         <Sidebar username={session.isLoggedIn ? session.username : undefined} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-surface px-4 md:hidden">
+          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-surface px-4 md:hidden">
+            <MobileMenuButton />
             <Link href="/dashboard" className="text-lg font-extrabold text-foreground">
               오픈소마
             </Link>
-            <MobileMenuButton />
           </header>
           <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
         </div>
