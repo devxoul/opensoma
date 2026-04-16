@@ -1,4 +1,4 @@
-import { ArrowRight, Browser, Command, Package, Terminal } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRight, Browser, Command, Package, SignIn, Terminal } from '@phosphor-icons/react/dist/ssr'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
@@ -25,16 +25,19 @@ export default function LandingPage() {
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
           <Link
-            href="/docs"
+            href="/login"
             className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
           >
-            Get started
+            <SignIn size={16} />
+            오픈소마 로그인하기
+          </Link>
+          <Link
+            href="/docs"
+            className="flex items-center gap-2 rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+          >
+            CLI&SDK 시작하기
             <ArrowRight size={16} />
           </Link>
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-5 py-2.5 font-mono text-sm text-foreground">
-            <span className="text-foreground-muted">$</span>
-            npm install -g opensoma
-          </div>
         </div>
       </section>
 
