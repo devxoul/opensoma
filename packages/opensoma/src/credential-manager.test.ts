@@ -66,6 +66,55 @@ describe('CredentialManager', () => {
     await expect(manager.getCredentials()).resolves.toBeNull()
   })
 
+  test('setTozIdentity merges into existing credentials', async () => {
+    const dir = await makeTempDir()
+    const manager = new CredentialManager(dir)
+
+    await manager.setCredentials({
+      sessionCookie: 'session-value',
+      csrfToken: 'csrf-value',
+    })
+    await manager.setTozIdentity('홍길동', '010-1234-5678')
+
+    await expect(manager.getCredentials()).resolves.toMatchObject({
+      sessionCookie: 'session-value',
+      csrfToken: 'csrf-value',
+      tozName: '홍길동',
+      tozPhone: '010-1234-5678',
+    })
+    await expect(manager.getTozIdentity()).resolves.toEqual({
+      name: '홍길동',
+      phone: '010-1234-5678',
+    })
+  })
+
+  test('setTozIdentity throws without SWMaestro credentials', async () => {
+    const dir = await makeTempDir()
+    const manager = new CredentialManager(dir)
+
+    await expect(manager.setTozIdentity('홍길동', '010-1234-5678')).rejects.toThrow(/auth login/)
+  })
+
+  test('clearTozIdentity removes only toz fields', async () => {
+    const dir = await makeTempDir()
+    const manager = new CredentialManager(dir)
+
+    await manager.setCredentials({
+      sessionCookie: 'session-value',
+      csrfToken: 'csrf-value',
+      tozName: '홍길동',
+      tozPhone: '010-1234-5678',
+    })
+    await manager.clearTozIdentity()
+
+    const creds = await manager.getCredentials()
+    expect(creds?.tozName).toBeUndefined()
+    expect(creds?.tozPhone).toBeUndefined()
+    expect(creds?.sessionCookie).toBe('session-value')
+    expect(creds?.csrfToken).toBe('csrf-value')
+    await expect(manager.getTozIdentity()).resolves.toBeNull()
+  })
+
   test('preserves session credentials when the encryption key is missing', async () => {
     const dir = await makeTempDir()
     const manager = new CredentialManager(dir)

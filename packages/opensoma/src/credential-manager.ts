@@ -76,6 +76,27 @@ export class CredentialManager {
     await rm(this.encryptionKeyPath, { force: true })
   }
 
+  async setTozIdentity(name: string, phone: string): Promise<void> {
+    const existing = await this.getCredentials()
+    if (!existing) {
+      throw new Error('SWMaestro credentials not found. Run: opensoma auth login first.')
+    }
+    await this.setCredentials({ ...existing, tozName: name, tozPhone: phone })
+  }
+
+  async clearTozIdentity(): Promise<void> {
+    const existing = await this.getCredentials()
+    if (!existing) return
+    const { tozName: _name, tozPhone: _phone, ...rest } = existing
+    await this.setCredentials(rest)
+  }
+
+  async getTozIdentity(): Promise<{ name: string; phone: string } | null> {
+    const creds = await this.getCredentials()
+    if (!creds?.tozName || !creds?.tozPhone) return null
+    return { name: creds.tozName, phone: creds.tozPhone }
+  }
+
   private async hydrateCredentials(credentials: StoredCredentials): Promise<Credentials> {
     if (!credentials.encryptedPassword) {
       return credentials

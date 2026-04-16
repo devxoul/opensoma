@@ -13,12 +13,14 @@ import {
   reportCommand,
   roomCommand,
   teamCommand,
+  tozCommand,
 } from './commands/index'
 
-function isAuthCommand(command: Command): boolean {
+function isUnauthenticatedCommand(command: Command): boolean {
   let current: Command | null = command
   while (current) {
-    if (current.name() === 'auth') {
+    const name = current.name()
+    if (name === 'auth' || name === 'toz') {
       return true
     }
     current = current.parent
@@ -31,7 +33,7 @@ const program = new Command()
 program.name('opensoma').description('SWMaestro MyPage CLI for AI agents').version(pkg.version)
 
 program.hook('preAction', async (_thisCommand, actionCommand) => {
-  if (isAuthCommand(actionCommand)) {
+  if (isUnauthenticatedCommand(actionCommand)) {
     return
   }
 
@@ -53,6 +55,7 @@ program.addCommand(teamCommand)
 program.addCommand(memberCommand)
 program.addCommand(eventCommand)
 program.addCommand(reportCommand)
+program.addCommand(tozCommand)
 
 program.parse(process.argv)
 
