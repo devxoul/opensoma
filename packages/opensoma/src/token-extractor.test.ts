@@ -104,6 +104,25 @@ describe('TokenExtractor', () => {
     ])
   })
 
+  test('extracts plaintext cookie from opensoma.dev host', async () => {
+    const home = await makeTempDir()
+    const dbPath = join(home, '.config', 'google-chrome', 'Default', 'Cookies')
+    createCookieDbWithPlaintext(dbPath, 'opensoma-dev-session', 0, 'opensoma.dev')
+
+    const extractor = new TokenExtractor('linux', home)
+    expect(await extractor.extract()).toEqual({ sessionCookie: 'opensoma-dev-session' })
+  })
+
+  test('decrypts encrypted cookie from opensoma.dev host on Linux', async () => {
+    const home = await makeTempDir()
+    const dbPath = join(home, '.config', 'google-chrome', 'Default', 'Cookies')
+    const encrypted = encryptLinuxCookie('opensoma-dev-encrypted')
+    createCookieDbWithEncrypted(dbPath, encrypted, 'opensoma.dev')
+
+    const extractor = new TokenExtractor('linux', home)
+    expect(await extractor.extract()).toEqual({ sessionCookie: 'opensoma-dev-encrypted' })
+  })
+
   test('decrypts encrypted cookie on Linux', async () => {
     const home = await makeTempDir()
     const dbPath = join(home, '.config', 'google-chrome', 'Default', 'Cookies')
@@ -148,26 +167,32 @@ function createCookieFile(filePath: string): void {
   writeFileSync(filePath, '')
 }
 
-function createCookieDbWithPlaintext(filePath: string, value: string, lastAccessUtc = 0): void {
+function createCookieDbWithPlaintext(
+  filePath: string,
+  value: string,
+  lastAccessUtc = 0,
+  hostKey = 'swmaestro.ai',
+): void {
   mkdirSync(dirname(filePath), { recursive: true })
   const db = new Database(filePath)
   db.run(
     'CREATE TABLE cookies (host_key TEXT, name TEXT, value TEXT, encrypted_value BLOB, creation_utc INTEGER, expires_utc INTEGER, is_httponly INTEGER, has_expires INTEGER, is_persistent INTEGER, priority INTEGER, samesite INTEGER, source_scheme INTEGER, is_secure INTEGER, path TEXT, last_access_utc INTEGER, last_update_utc INTEGER, source_port INTEGER, source_type INTEGER)',
   )
   db.run(
-    "INSERT INTO cookies (host_key, name, value, encrypted_value, last_access_utc) VALUES ('swmaestro.ai', 'JSESSIONID', ?, '', ?)",
-    [value, lastAccessUtc],
+    "INSERT INTO cookies (host_key, name, value, encrypted_value, last_access_utc) VALUES (?, 'JSESSIONID', ?, '', ?)",
+    [hostKey, value, lastAccessUtc],
   )
   db.close()
 }
 
-function createCookieDbWithEncrypted(filePath: string, encrypted: Buffer): void {
+function createCookieDbWithEncrypted(filePath: string, encrypted: Buffer, hostKey = 'swmaestro.ai'): void {
   mkdirSync(dirname(filePath), { recursive: true })
   const db = new Database(filePath)
   db.run(
     'CREATE TABLE cookies (host_key TEXT, name TEXT, value TEXT, encrypted_value BLOB, creation_utc INTEGER, expires_utc INTEGER, is_httponly INTEGER, has_expires INTEGER, is_persistent INTEGER, priority INTEGER, samesite INTEGER, source_scheme INTEGER, is_secure INTEGER, path TEXT, last_access_utc INTEGER, last_update_utc INTEGER, source_port INTEGER, source_type INTEGER)',
   )
-  db.run("INSERT INTO cookies (host_key, name, value, encrypted_value) VALUES ('swmaestro.ai', 'JSESSIONID', '', ?)", [
+  db.run("INSERT INTO cookies (host_key, name, value, encrypted_value) VALUES (?, 'JSESSIONID', '', ?)", [
+    hostKey,
     encrypted,
   ])
   db.close()

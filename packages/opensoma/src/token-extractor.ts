@@ -8,7 +8,7 @@ import { basename, dirname, join } from 'node:path'
 const require = createRequire(import.meta.url)
 
 const COOKIE_QUERY =
-  "SELECT encrypted_value, last_access_utc, value FROM cookies WHERE host_key LIKE '%swmaestro.ai' AND name = 'JSESSIONID' ORDER BY last_access_utc DESC LIMIT 1"
+  "SELECT encrypted_value, last_access_utc, value FROM cookies WHERE (host_key LIKE '%swmaestro.ai' OR host_key LIKE '%opensoma.dev') AND name = 'JSESSIONID' ORDER BY last_access_utc DESC LIMIT 1"
 const CHROMIUM_SALT = 'saltysalt'
 const CHROMIUM_IV = Buffer.alloc(16, 0x20)
 const PROFILE_DIR_PATTERN = /^Profile\s+\d+$/

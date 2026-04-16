@@ -272,14 +272,14 @@ async function extractAction(options: ExtractOptions): Promise<void> {
     const candidates = await extractor.extractCandidates()
     if (candidates.length === 0) {
       throw new Error(
-        'No SWMaestro session found in any browser. Login to swmaestro.ai in a supported Chromium browser (Chrome, Edge, Brave, Arc, Vivaldi) first.',
+        'No SWMaestro session found in any browser. Login to swmaestro.ai or opensoma.dev in a supported Chromium browser (Chrome, Edge, Brave, Arc, Vivaldi) first.',
       )
     }
 
     const credentials = await resolveExtractedCredentials(candidates)
     if (!credentials) {
       throw new Error(
-        'Found SWMaestro session cookies in supported browsers, but none are valid. Refresh your swmaestro.ai login in a supported Chromium browser and try again.',
+        'Found SWMaestro session cookies in supported browsers, but none are valid. Refresh your swmaestro.ai or opensoma.dev login in a supported Chromium browser and try again.',
       )
     }
 
