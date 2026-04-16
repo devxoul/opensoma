@@ -1,6 +1,6 @@
 'use server'
 
-import { getIronSession } from 'iron-session'
+import { sealData } from 'iron-session'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
@@ -29,13 +29,22 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
       return { error: '로그인에 실패했습니다.' }
     }
 
-    const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
-    session.sessionCookie = sessionData.sessionCookie
-    session.csrfToken = sessionData.csrfToken
-    session.username = username
-    session.password = password
-    session.isLoggedIn = true
-    await session.save()
+    // Mobile Safari does not persist cookies written via iron-session's
+    // session.save() inside Server Actions (iron-session#870). Seal the
+    // payload manually and write it with cookies().set() to avoid the bug.
+    const sealed = await sealData(
+      {
+        sessionCookie: sessionData.sessionCookie,
+        csrfToken: sessionData.csrfToken,
+        username,
+        password,
+        isLoggedIn: true,
+      } satisfies SessionData,
+      { password: sessionOptions.password, ttl: sessionOptions.ttl },
+    )
+
+    const cookieStore = await cookies()
+    cookieStore.set(sessionOptions.cookieName, sealed, sessionOptions.cookieOptions)
   } catch {
     return { error: '아이디 또는 비밀번호가 올바르지 않습니다.' }
   }
