@@ -97,7 +97,7 @@ export default async function ReportDetailPage({ params }: PageProps) {
               <Separator />
               <div className="space-y-3">
                 <h2 className="text-sm font-semibold text-foreground">멘토 의견</h2>
-                <p className="whitespace-pre-line text-sm text-foreground">{report.mentorOpinion}</p>
+                <p className="text-sm whitespace-pre-line text-foreground">{report.mentorOpinion}</p>
               </div>
             </>
           ) : null}
@@ -106,7 +106,7 @@ export default async function ReportDetailPage({ params }: PageProps) {
               <Separator />
               <div className="space-y-3">
                 <h2 className="text-sm font-semibold text-foreground">기타</h2>
-                <p className="whitespace-pre-line text-sm text-foreground">{report.etc}</p>
+                <p className="text-sm whitespace-pre-line text-foreground">{report.etc}</p>
               </div>
             </>
           ) : null}
