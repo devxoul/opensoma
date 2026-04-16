@@ -63,7 +63,7 @@ async function promptPassword(message: string): Promise<string> {
 
 type LoginOptions = { username?: string; password?: string; pretty?: boolean }
 type StatusOptions = { pretty?: boolean }
-type ExtractOptions = { pretty?: boolean }
+type ExtractOptions = { debug?: boolean; pretty?: boolean }
 type ExtractedSessionValidator = Pick<SomaHttp, 'checkLogin' | 'extractCsrfToken'>
 type CredentialStore = Pick<CredentialManager, 'getCredentials' | 'remove' | 'setCredentials'>
 type StatusValidator = Pick<SomaHttp, 'checkLogin'>
@@ -87,21 +87,32 @@ export async function resolveExtractedCredentials(
   candidates: ExtractedSessionCandidate[],
   createValidator: (sessionCookie: string) => ExtractedSessionValidator = (sessionCookie) =>
     new SomaHttp({ sessionCookie }),
+  debug?: (message: string) => void,
 ): Promise<{ csrfToken: string; sessionCookie: string } | null> {
+  debug?.(`Validating ${candidates.length} candidate(s) against server...`)
+
   for (const candidate of candidates) {
     const http = createValidator(candidate.sessionCookie)
+    debug?.(`  ${candidate.browser} / ${candidate.profile}: checkLogin...`)
 
     try {
       const valid = Boolean(await http.checkLogin())
       if (!valid) {
+        debug?.(`  ${candidate.browser} / ${candidate.profile}: session invalid`)
         continue
       }
 
+      debug?.(`  ${candidate.browser} / ${candidate.profile}: valid! Extracting CSRF token...`)
+      const csrfToken = await http.extractCsrfToken()
+      debug?.(`  CSRF token obtained (${csrfToken.length} chars)`)
+
       return {
         sessionCookie: candidate.sessionCookie,
-        csrfToken: await http.extractCsrfToken(),
+        csrfToken,
       }
-    } catch {}
+    } catch (error) {
+      debug?.(`  ${candidate.browser} / ${candidate.profile}: error: ${error instanceof Error ? error.message : String(error)}`)
+    }
   }
 
   return null
@@ -264,11 +275,17 @@ async function statusAction(options: StatusOptions): Promise<void> {
 }
 
 async function extractAction(options: ExtractOptions): Promise<void> {
+  const log = options.debug
+    ? (message: string) => process.stderr.write(`[extract] ${message}\n`)
+    : undefined
+
   try {
     const { TokenExtractor } = (await import('../token-extractor')) as {
-      TokenExtractor: new () => { extractCandidates: () => Promise<ExtractedSessionCandidate[]> }
+      TokenExtractor: new (options?: { debug?: boolean }) => {
+        extractCandidates: () => Promise<ExtractedSessionCandidate[]>
+      }
     }
-    const extractor = new TokenExtractor()
+    const extractor = new TokenExtractor({ debug: options.debug })
     const candidates = await extractor.extractCandidates()
     if (candidates.length === 0) {
       throw new Error(
@@ -276,7 +293,9 @@ async function extractAction(options: ExtractOptions): Promise<void> {
       )
     }
 
-    const credentials = await resolveExtractedCredentials(candidates)
+    log?.(`Extracted ${candidates.length} candidate(s): ${candidates.map((c) => `${c.browser}/${c.profile}`).join(', ')}`)
+
+    const credentials = await resolveExtractedCredentials(candidates, undefined, log)
     if (!credentials) {
       throw new Error(
         'Found SWMaestro session cookies in supported browsers, but none are valid. Refresh your swmaestro.ai login in a supported Chromium browser and try again.',
@@ -319,6 +338,7 @@ export const authCommand = new Command('auth')
   .addCommand(
     new Command('extract')
       .description('Extract browser credentials')
+      .option('--debug', 'Show debug output')
       .option('--pretty', 'Pretty print JSON output')
       .action(extractAction),
   )

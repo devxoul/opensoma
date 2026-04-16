@@ -124,11 +124,40 @@ function queryCookieDb(dbPath: string): CookieRow | undefined {
   }
 }
 
+export type TokenExtractorOptions = {
+  platform?: NodeJS.Platform
+  homeDirectory?: string
+  debug?: boolean
+}
+
 export class TokenExtractor {
+  private readonly platform: NodeJS.Platform
+  private readonly homeDirectory: string
+  private readonly debugEnabled: boolean
+
+  constructor(options?: TokenExtractorOptions)
+  constructor(platform?: NodeJS.Platform, homeDirectory?: string, debug?: boolean)
   constructor(
-    private readonly platform: NodeJS.Platform = process.platform,
-    private readonly homeDirectory: string = homedir(),
-  ) {}
+    platformOrOptions?: NodeJS.Platform | TokenExtractorOptions,
+    homeDirectory?: string,
+    debug?: boolean,
+  ) {
+    if (typeof platformOrOptions === 'object' && platformOrOptions !== null) {
+      this.platform = platformOrOptions.platform ?? process.platform
+      this.homeDirectory = platformOrOptions.homeDirectory ?? homedir()
+      this.debugEnabled = platformOrOptions.debug ?? false
+    } else {
+      this.platform = platformOrOptions ?? process.platform
+      this.homeDirectory = homeDirectory ?? homedir()
+      this.debugEnabled = debug ?? false
+    }
+  }
+
+  private log(...args: unknown[]): void {
+    if (!this.debugEnabled) return
+    const message = args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')
+    process.stderr.write(`[extract] ${message}\n`)
+  }
 
   async extract(): Promise<{ sessionCookie: string } | null> {
     const candidates = await this.extractCandidates()
@@ -143,28 +172,35 @@ export class TokenExtractor {
 
   async extractCandidates(): Promise<ExtractedSessionCandidate[]> {
     const candidates = new Map<string, ExtractedSessionCandidate>()
+    const cookieDatabases = this.findCookieDatabases()
+    this.log(`Found ${cookieDatabases.length} cookie database(s)`)
 
-    for (const databasePath of this.findCookieDatabases()) {
+    for (const databasePath of cookieDatabases) {
       const browser = this.getBrowserByPath(databasePath)
       if (!browser) {
+        this.log(`Skipping ${databasePath} (no matching browser config)`)
         continue
       }
 
       const profile = basename(dirname(databasePath))
+      this.log(`Processing ${browser.name} / ${profile}`)
 
       const tempDirectory = mkdtempSync(join(tmpdir(), 'opensoma-cookie-db-'))
       const tempDatabasePath = join(tempDirectory, 'Cookies')
 
       try {
         copySqliteDatabase(databasePath, tempDatabasePath)
+        this.log(`  Copied DB to ${tempDatabasePath}`)
 
         const row = queryCookieDb(tempDatabasePath)
         if (!row) {
+          this.log('  No JSESSIONID cookie found')
           continue
         }
 
         const plaintextValue = normalizeCookieText(row.value)
         if (plaintextValue) {
+          this.log(`  Found plaintext cookie (${plaintextValue.length} chars)`)
           this.addCandidate(candidates, {
             browser: browser.name,
             lastAccessUtc: this.normalizeLastAccessUtc(row.last_access_utc),
@@ -176,29 +212,40 @@ export class TokenExtractor {
 
         const encryptedValue = normalizeCookieBytes(row.encrypted_value)
         if (!encryptedValue || encryptedValue.length === 0) {
+          this.log('  No plaintext or encrypted value')
           continue
         }
 
+        this.log(`  Decrypting encrypted cookie (${encryptedValue.length} bytes)...`)
         const decryptedValue = await this.decryptCookie(encryptedValue, browser.name)
         if (decryptedValue) {
+          this.log(`  Decrypted successfully (${decryptedValue.length} chars)`)
           this.addCandidate(candidates, {
             browser: browser.name,
             lastAccessUtc: this.normalizeLastAccessUtc(row.last_access_utc),
             profile,
             sessionCookie: decryptedValue,
           })
+        } else {
+          this.log('  Decryption returned empty value')
         }
-      } catch {
+      } catch (error) {
+        this.log(`  Error: ${error instanceof Error ? error.message : String(error)}`)
       } finally {
         rmSync(tempDirectory, { recursive: true, force: true })
       }
     }
 
+    this.log(`Total unique candidates: ${candidates.size}`)
     return [...candidates.values()].sort((left, right) => right.lastAccessUtc - left.lastAccessUtc)
   }
 
   findCookieDatabases(): string[] {
-    return BROWSERS.flatMap((browser) => this.findBrowserCookieDatabases(browser))
+    const results = BROWSERS.flatMap((browser) => this.findBrowserCookieDatabases(browser))
+    if (results.length === 0) {
+      this.log('No cookie databases found. Searched browsers:', BROWSERS.map((b) => b.name).join(', '))
+    }
+    return results
   }
 
   private async decryptCookie(encryptedValue: Buffer, browserName: string): Promise<string> {
@@ -207,14 +254,18 @@ export class TokenExtractor {
     }
 
     if (this.platform === 'linux') {
+      this.log('  Using Linux PBKDF2 decryption')
       return this.decryptChromiumValue(encryptedValue, pbkdf2Sync('peanuts', CHROMIUM_SALT, 1, 16, 'sha1'))
     }
 
     if (this.platform === 'darwin') {
+      this.log(`  Fetching macOS Keychain key for ${browserName}...`)
       const key = await this.getMacOSEncryptionKey(browserName)
+      this.log('  Keychain key obtained')
       return this.decryptChromiumValue(encryptedValue, key)
     }
 
+    this.log(`  Unsupported platform for decryption: ${this.platform}`)
     return ''
   }
 
@@ -224,11 +275,10 @@ export class TokenExtractor {
       throw new Error(`Unsupported browser: ${browserName}`)
     }
 
-    const password = execSync(
-      `security find-generic-password -s ${JSON.stringify(browser.keychainService)} -a ${JSON.stringify(browser.keychainAccount)} -w`,
-      { encoding: 'utf8' },
-    ).trimEnd()
+    const command = `security find-generic-password -s ${JSON.stringify(browser.keychainService)} -a ${JSON.stringify(browser.keychainAccount)} -w`
+    this.log(`  Keychain command: ${command}`)
 
+    const password = execSync(command, { encoding: 'utf8' }).trimEnd()
     return pbkdf2Sync(password, CHROMIUM_SALT, 1003, 16, 'sha1')
   }
 
@@ -266,14 +316,20 @@ export class TokenExtractor {
   private findBrowserCookieDatabases(browser: BrowserConfig): string[] {
     const browserRoot = this.getBrowserRoot(browser)
     if (!browserRoot || !existsSync(browserRoot)) {
+      this.log(`${browser.name}: not found at ${browserRoot ?? '(unsupported platform)'}`)
       return []
     }
 
-    return readdirSync(browserRoot, { withFileTypes: true })
+    const profiles = readdirSync(browserRoot, { withFileTypes: true })
       .filter((entry) => entry.isDirectory() && this.isSupportedProfileDirectory(entry.name))
       .sort((left, right) => left.name.localeCompare(right.name))
+
+    const databases = profiles
       .map((entry) => join(browserRoot, entry.name, 'Cookies'))
       .filter((databasePath) => existsSync(databasePath))
+
+    this.log(`${browser.name}: ${profiles.length} profile(s), ${databases.length} cookie DB(s)`)
+    return databases
   }
 
   private getBrowserRoot(browser: BrowserConfig): string | null {
