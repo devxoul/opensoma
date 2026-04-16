@@ -299,12 +299,28 @@ export function parseReportList(html: string): ReportListItem[] {
 
 export function parseReportDetail(html: string, id = 0): ReportDetail {
   const root = parse(html)
-  const labels = extractLabelMap(root)
+  const labels = { ...extractLabelMap(root), ...extractGroupMap(root) }
 
   const progressTimeText = labels['진행시간'] || ''
   const exceptTimeText = labels['제외시간'] || ''
-  const progressTimes = progressTimeText.split(/\s*~\s*/)
-  const exceptTimes = exceptTimeText.split(/\s*~\s*/)
+  const progressTimeMatch = progressTimeText.match(/(\d{2}:\d{2})\s*~\s*(\d{2}:\d{2})/)
+  const exceptTimeMatch = exceptTimeText.match(/(\d{2}:\d{2})\s*~\s*(\d{2}:\d{2})/)
+
+  let subject = labels['주제'] || ''
+  if (!subject) {
+    for (const group of root.querySelectorAll('.group')) {
+      if (cleanText(group.querySelector('strong.t')) === '주제') {
+        subject = group.querySelector('input')?.getAttribute('value')?.trim() || ''
+        break
+      }
+    }
+  }
+
+  const files = root
+    .querySelectorAll('.file_list_new a')
+    .map((a) => a.getAttribute('href') || '')
+    .filter(Boolean)
+    .map((href) => (href.startsWith('http') ? href : `https://www.swmaestro.ai${href}`))
 
   return ReportDetailSchema.parse({
     id,
@@ -312,27 +328,27 @@ export function parseReportDetail(html: string, id = 0): ReportDetail {
     title: labels['제목'] || '',
     progressDate: labels['진행 날짜'] || '',
     status: labels['상태'] || '',
-    author: labels['작성자'] || '',
+    author: labels['작성자'] || labels['진행 멘토 명'] || '',
     createdAt: labels['등록일'] || '',
     acceptedTime: labels['인정시간'] || '',
     payAmount: labels['지급액'] || '',
-    content: labels['추진 내용'] || '',
-    subject: labels['주제'] || '',
-    menteeRegion: labels['멘토링 대상'] || '',
+    content: labels['추진내용'] || labels['추진 내용'] || '',
+    subject,
+    menteeRegion: labels['멘토링대상'] || labels['멘토링 대상'] || '',
     reportType: labels['구분'] || '',
     teamNames: labels['팀명'] || '',
     venue: labels['진행 장소'] || '',
-    attendanceCount: extractNumber(labels['참석 연수생'] || ''),
+    attendanceCount: extractNumber(labels['참석자 인원'] || labels['참석 연수생'] || ''),
     attendanceNames: labels['참석자 이름'] || '',
-    progressStartTime: progressTimes[0] || '',
-    progressEndTime: progressTimes[1] || '',
-    exceptStartTime: exceptTimes[0] || '',
-    exceptEndTime: exceptTimes[1] || '',
-    exceptReason: labels['제외 사유'] || labels['제외이유'] || '',
-    mentorOpinion: labels['멘토 의견'] || '',
+    progressStartTime: progressTimeMatch?.[1] || '',
+    progressEndTime: progressTimeMatch?.[2] || '',
+    exceptStartTime: exceptTimeMatch?.[1] || '',
+    exceptEndTime: exceptTimeMatch?.[2] || '',
+    exceptReason: labels['제외사유'] || labels['제외 사유'] || labels['제외이유'] || '',
+    mentorOpinion: labels['멘토의견'] || labels['멘토 의견'] || '',
     nonAttendanceNames: labels['무단불참자'] || '',
-    etc: labels['특이사항'] || '',
-    files: [],
+    etc: labels['기타'] || labels['특이사항'] || '',
+    files,
   })
 }
 
