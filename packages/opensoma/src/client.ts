@@ -20,6 +20,7 @@ import {
   toRegionCode,
   toReportTypeCd,
 } from './shared/utils/swmaestro'
+import { TozClient } from './toz-client'
 import type {
   ApplicationHistoryItem,
   ApprovalListItem,
@@ -46,6 +47,8 @@ export interface SomaClientOptions {
   username?: string
   password?: string
   verbose?: boolean
+  tozName?: string
+  tozPhone?: string
 }
 
 export class SomaClient {
@@ -136,6 +139,8 @@ export class SomaClient {
     get(id: number): Promise<unknown>
     apply(id: number): Promise<void>
   }
+
+  readonly toz: TozClient
 
   constructor(options: SomaClientOptions = {}) {
     this.options = options
@@ -474,6 +479,11 @@ export class SomaClient {
         await this.http.post('/application/application/application.do', buildApplicationPayload(id))
       },
     }
+
+    this.toz = new TozClient({
+      name: options.tozName,
+      phone: options.tozPhone,
+    })
   }
 
   getSessionData(): { sessionCookie: string | undefined; csrfToken: string | null } {
