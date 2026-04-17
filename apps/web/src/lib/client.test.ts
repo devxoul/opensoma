@@ -144,4 +144,63 @@ describe('validateClientSession', () => {
     expect(session.sessionCookie).toBe('fresh-session-cookie')
     expect(session.csrfToken).toBe('fresh-csrf-token')
   })
+
+  it('continues without throwing when session.save() hits the Next.js read-only cookies error', async () => {
+    let loginAttempts = 0
+    const session = {
+      isLoggedIn: true,
+      sessionCookie: 'stale-session-cookie',
+      csrfToken: 'stale-csrf-token',
+      username: 'devxoul@gmail.com',
+      password: 'password',
+      save: async () => {
+        throw new Error(
+          'Cookies can only be modified in a Server Action or Route Handler. Read more: https://nextjs.org/docs/app/api-reference/functions/cookies#options',
+        )
+      },
+    }
+
+    const client = {
+      isLoggedIn: async () => loginAttempts > 0,
+      login: async () => {
+        loginAttempts += 1
+      },
+      getSessionData: () => ({
+        sessionCookie: 'fresh-session-cookie',
+        csrfToken: 'fresh-csrf-token',
+      }),
+    }
+
+    await expect(validateClientSession(session, client)).resolves.toBe(client)
+    expect(loginAttempts).toBe(1)
+    expect(session.sessionCookie).toBe('fresh-session-cookie')
+    expect(session.csrfToken).toBe('fresh-csrf-token')
+  })
+
+  it('rethrows unexpected errors from session.save()', async () => {
+    let loginAttempts = 0
+    const session = {
+      isLoggedIn: true,
+      sessionCookie: 'stale-session-cookie',
+      csrfToken: 'stale-csrf-token',
+      username: 'devxoul@gmail.com',
+      password: 'password',
+      save: async () => {
+        throw new Error('disk is on fire')
+      },
+    }
+
+    const client = {
+      isLoggedIn: async () => loginAttempts > 0,
+      login: async () => {
+        loginAttempts += 1
+      },
+      getSessionData: () => ({
+        sessionCookie: 'fresh-session-cookie',
+        csrfToken: 'fresh-csrf-token',
+      }),
+    }
+
+    await expect(validateClientSession(session, client)).rejects.toThrow('disk is on fire')
+  })
 })

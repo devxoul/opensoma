@@ -36,7 +36,7 @@ export async function validateClientSession<T extends Pick<SomaClient, 'getSessi
       session.sessionCookie = sessionData.sessionCookie
       session.csrfToken = sessionData.csrfToken
       session.isLoggedIn = true
-      await session.save()
+      await saveSessionIfWritable(session)
     }
   }
 
@@ -68,6 +68,27 @@ async function retryLogin(client: Pick<SomaClient, 'isLoggedIn' | 'login'>): Pro
 
 async function delay(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+// Next.js disallows cookie writes outside of Server Actions and Route Handlers.
+// When auth recovery runs inside a Server Component render, session.save() throws
+// a read-only cookies error. Swallow that specific error so the render can
+// continue with the refreshed in-memory credentials; the next Server Action or
+// Route Handler request will persist the fresh session.
+async function saveSessionIfWritable(session: Pick<SessionLike, 'save'>): Promise<void> {
+  try {
+    await session.save()
+  } catch (error) {
+    if (isReadOnlyCookiesError(error)) {
+      return
+    }
+    throw error
+  }
+}
+
+function isReadOnlyCookiesError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  return error.message.includes('Cookies can only be modified in a Server Action or Route Handler')
 }
 
 export async function createClient(persistSession: boolean = true): Promise<SomaClient> {
