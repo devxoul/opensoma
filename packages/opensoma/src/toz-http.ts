@@ -106,6 +106,9 @@ export class TozHttp {
       const location = response.headers.get('location')
       if (!location) break
       const redirectUrl = location.startsWith('http') ? location : new URL(location, `${TOZ_BASE_URL}/`).toString()
+      if (!isSameOrigin(redirectUrl, TOZ_BASE_URL)) {
+        throw new Error(`Refusing to follow cross-origin redirect to ${new URL(redirectUrl).origin}`)
+      }
       response = await fetch(redirectUrl, {
         method: 'GET',
         headers: this.buildHeaders(),
@@ -165,6 +168,14 @@ export class TozHttp {
 
 function stripJsessionPrefix(cookie: string): string {
   return cookie.includes('=') ? (cookie.split('=', 2)[1] ?? cookie) : cookie
+}
+
+function isSameOrigin(url: string, baseUrl: string): boolean {
+  try {
+    return new URL(url).origin === new URL(baseUrl).origin
+  } catch {
+    return false
+  }
 }
 
 function readSetCookies(headers: Headers): string[] {

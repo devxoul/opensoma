@@ -100,7 +100,46 @@ describe('TozHttp', () => {
     const http = new TozHttp({ sessionCookie: 'ABC' })
     await expect(http.get('/index.htm')).rejects.toThrow(/HTTP 500/)
   })
+
+  test('refuses to follow cross-origin redirects (no cookie leak)', async () => {
+    globalThis.fetch = mock(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/index.htm')) {
+        return redirectResponse('https://evil.example.com/steal')
+      }
+      throw new Error(`Should not fetch ${url} — cross-origin redirect must be blocked`)
+    }) as typeof fetch
+
+    const http = new TozHttp({ sessionCookie: 'ABC' })
+    await expect(http.get('/index.htm')).rejects.toThrow(/cross-origin redirect/)
+  })
+
+  test('follows same-origin redirects normally', async () => {
+    let hit = 0
+    globalThis.fetch = mock(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      hit += 1
+      if (hit === 1) return redirectResponse(`${TOZ_BASE_URL}/mypage.htm`)
+      expect(url).toBe(`${TOZ_BASE_URL}/mypage.htm`)
+      return createResponse('mypage content')
+    }) as typeof fetch
+
+    const http = new TozHttp({ sessionCookie: 'ABC' })
+    const body = await http.get('/mypage_login_.htm')
+    expect(body).toBe('mypage content')
+    expect(hit).toBe(2)
+  })
 })
+
+function redirectResponse(location: string): Response {
+  const headers = new Headers({ location })
+  const response = new Response(null, { status: 302, headers })
+  Object.defineProperty(response.headers, 'getSetCookie', {
+    value: () => [],
+    configurable: true,
+  })
+  return response
+}
 
 function createResponse(
   body: string,
