@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, it } from 'bun:test'
 import { mkdtemp, readFile, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -15,7 +15,7 @@ afterEach(async () => {
 })
 
 describe('CredentialManager', () => {
-  test('loads empty config when file does not exist', async () => {
+  it('loads an empty config when the credentials file does not exist', async () => {
     const dir = await makeTempDir()
     const manager = new CredentialManager(dir)
 
@@ -23,7 +23,7 @@ describe('CredentialManager', () => {
     await expect(manager.getCredentials()).resolves.toBeNull()
   })
 
-  test('saves and loads credentials with secure permissions', async () => {
+  it('saves and loads credentials with secure file permissions', async () => {
     const dir = await makeTempDir()
     const manager = new CredentialManager(dir)
 
@@ -53,7 +53,7 @@ describe('CredentialManager', () => {
     expect(keyFileStat.mode & 0o777).toBe(0o600)
   })
 
-  test('removes credentials file', async () => {
+  it('removes the credentials file', async () => {
     const dir = await makeTempDir()
     const manager = new CredentialManager(dir)
 
@@ -66,7 +66,7 @@ describe('CredentialManager', () => {
     await expect(manager.getCredentials()).resolves.toBeNull()
   })
 
-  test('preserves session credentials when the encryption key is missing', async () => {
+  it('preserves session credentials but drops the password when the encryption key is missing', async () => {
     const dir = await makeTempDir()
     const manager = new CredentialManager(dir)
 

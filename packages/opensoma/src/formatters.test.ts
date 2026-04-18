@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, it } from 'bun:test'
 
 import {
   parseApprovalList,
@@ -21,7 +21,7 @@ import {
 import { ApprovalListItemSchema, ReportDetailSchema, ReportListItemSchema } from './types'
 
 describe('formatters', () => {
-  test('parseMentoringList parses real list rows', () => {
+  it('parses real mentoring list rows from the list page', () => {
     const html = `
       <table>
         <thead><tr><th>NO.</th><th>제목</th><th>접수기간</th><th>진행날짜</th><th>모집인원</th><th>개설승인</th><th>상태</th><th>작성자</th><th>등록일</th></tr></thead>
@@ -59,7 +59,7 @@ describe('formatters', () => {
     ])
   })
 
-  test('parseMentoringDetail parses real key-value detail view', () => {
+  it('parses the key-value sections of a real mentoring detail view', () => {
     const html = `
       <input type="hidden" name="reportCd" value="MRC020">
       <div class="top">
@@ -94,7 +94,7 @@ describe('formatters', () => {
     })
   })
 
-  test('parseMentoringDetail parses applicant list table', () => {
+  it('parses the applicant list table on the mentoring detail view', () => {
     const html = `
       <div class="group"><strong class="t">모집 명</strong><div class="c">[자유 멘토링] 테스트 멘토링</div></div>
       <div class="group"><strong class="t">접수 기간</strong><div class="c">2026.04.01 ~ 2026.04.10</div></div>
@@ -133,7 +133,7 @@ describe('formatters', () => {
     ])
   })
 
-  test('parseMentoringDetail returns empty applicants when no applicant table exists', () => {
+  it('returns an empty applicant list when no applicant table is present', () => {
     const html = `
       <div class="group"><strong class="t">모집 명</strong><div class="c">[자유 멘토링] 빈 멘토링</div></div>
       <div class="group"><strong class="t">접수 기간</strong><div class="c">2026.04.01 ~ 2026.04.10</div></div>
@@ -146,7 +146,7 @@ describe('formatters', () => {
     expect(parseMentoringDetail(html, 5678).applicants).toEqual([])
   })
 
-  test('parseMentoringDetail ignores unrelated 5-column tables in content', () => {
+  it('ignores unrelated 5-column tables embedded in the detail content', () => {
     const html = `
       <div class="group"><strong class="t">모집 명</strong><div class="c">[자유 멘토링] 콘텐츠 테이블 멘토링</div></div>
       <div class="group"><strong class="t">접수 기간</strong><div class="c">2026.04.01 ~ 2026.04.10</div></div>
@@ -166,7 +166,7 @@ describe('formatters', () => {
     expect(parseMentoringDetail(html, 9999).applicants).toEqual([])
   })
 
-  test('parseRoomList parses real room cards with embedded time slots', () => {
+  it('parses real room cards along with their embedded time slots', () => {
     const html = `
       <ul class="bbs-reserve">
         <li class="item">
@@ -205,7 +205,7 @@ describe('formatters', () => {
     ])
   })
 
-  test('parseRoomSlots parses rentTime fragment', () => {
+  it('parses the rentTime fragment for room slot availability and reservation info', () => {
     const html = `
       <span class="ck-st2" data-hour="09" data-minute="00">
         <input type="checkbox" name="time" id="time1_1" value="1">
@@ -229,7 +229,7 @@ describe('formatters', () => {
     ])
   })
 
-  test('parseDashboard parses real dashboard sections', () => {
+  it('parses every section of a real dashboard page', () => {
     const html = `
       <ul class="dash-top">
         <li class="dash-card">
@@ -287,7 +287,7 @@ describe('formatters', () => {
     })
   })
 
-  test('parseNoticeList and parseNoticeDetail parse real notice structures', () => {
+  it('parses real notice list and detail page structures', () => {
     const listHtml = `
       <table>
         <thead><tr><th>NO.</th><th>제목</th><th>작성자</th><th>등록일</th></tr></thead>
@@ -331,7 +331,7 @@ describe('formatters', () => {
     })
   })
 
-  test('parseTeamInfo parses team cards and summary', () => {
+  it('parses team cards together with the team count summary', () => {
     const html = `
       <ul class="bbs-team">
         <li>
@@ -362,7 +362,7 @@ describe('formatters', () => {
     })
   })
 
-  test('parseMemberInfo parses dl pairs', () => {
+  it('parses member info from <dl> definition pairs', () => {
     const html = `
       <dl><dt><span class="point">아이디</span></dt><dd>devxoul@gmail.com</dd></dl>
       <dl><dt><span class="point">이름</span></dt><dd>전수열</dd></dl>
@@ -384,7 +384,7 @@ describe('formatters', () => {
     })
   })
 
-  test('parseEventList parses 7-column event table', () => {
+  it('parses the 7-column event list table', () => {
     const html = `
       <table>
         <thead><tr><th>NO.</th><th>구분</th><th>제목</th><th>접수기간</th><th>행사기간</th><th>상태</th><th>등록일</th></tr></thead>
@@ -407,7 +407,7 @@ describe('formatters', () => {
     ])
   })
 
-  test('parseApplicationHistory parses 10-column mentoring history table', () => {
+  it('parses the 10-column mentoring application history table', () => {
     const html = `
       <table>
         <thead>
@@ -446,7 +446,7 @@ describe('formatters', () => {
     ])
   })
 
-  test('parsePagination parses bbs-total block', () => {
+  it('parses the bbs-total pagination block', () => {
     const html = `
       <ul class="bbs-total">
         <li>Total : 11</li>
@@ -457,12 +457,12 @@ describe('formatters', () => {
     expect(parsePagination(html)).toEqual({ total: 11, currentPage: 1, totalPages: 2 })
   })
 
-  test('parseCsrfToken extracts hidden input', () => {
+  it('extracts the CSRF token from a hidden input field', () => {
     expect(parseCsrfToken('<form><input type="hidden" name="csrfToken" value="csrf-123"></form>')).toBe('csrf-123')
   })
 
   describe('parseReportList', () => {
-    test('parses report list table with all fields', () => {
+    it('parses every field of the report list table', () => {
       const html = `
         <ul class="bbs-total"><li><strong class="color-blue">Total :</strong> 2</li><li><span class="color-blue">1</span>/1 Page</li></ul>
         <table class=" t">
@@ -532,7 +532,7 @@ describe('formatters', () => {
       })
     })
 
-    test('returns empty array for empty table', () => {
+    it('returns an empty array when the report list table has no rows', () => {
       const html = `
         <ul class="bbs-total"><li><strong class="color-blue">Total :</strong> 0</li><li><span class="color-blue">1</span>/1 Page</li></ul>
         <table class=" t">
@@ -552,7 +552,7 @@ describe('formatters', () => {
   })
 
   describe('parseReportDetail', () => {
-    test('parses report detail view with all fields', () => {
+    it('parses every field of the report detail view', () => {
       const html = `
         <div class="board-view">
         <table>
@@ -590,7 +590,7 @@ describe('formatters', () => {
       ReportDetailSchema.parse(result)
     })
 
-    test('uses provided id in result', () => {
+    it('uses the provided id in the parsed report detail', () => {
       const html = `
         <div class="board-view">
         <table>
@@ -612,7 +612,7 @@ describe('formatters', () => {
   })
 
   describe('parseApprovalList', () => {
-    test('parses approval list table with 10 columns', () => {
+    it('parses every column of the 10-column approval list table', () => {
       const html = `
         <ul class="bbs-total"><li><strong class="color-blue">Total :</strong> 1</li><li><span class="color-blue">1</span>/1 Page</li></ul>
         <table class=" t">
@@ -662,7 +662,7 @@ describe('formatters', () => {
       })
     })
 
-    test('returns empty array for nodata table', () => {
+    it('returns an empty array when the approval table shows the nodata row', () => {
       const html = `
         <table class=" t"><tbody><tr><td colspan="10" class="nodata">데이터가 없습니다.</td></tr></tbody></table>
       `

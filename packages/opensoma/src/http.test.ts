@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, describe, expect, it, mock } from 'bun:test'
 
 import { MENU_NO } from './constants'
 import { AuthenticationError } from './errors'
@@ -12,7 +12,7 @@ afterEach(() => {
 })
 
 describe('SomaHttp', () => {
-  test('get sends query params and stores cookies', async () => {
+  it('sends query params on GET and stores returned cookies', async () => {
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe(`https://www.swmaestro.ai/sw/member/user/forLogin.do?menuNo=${MENU_NO.LOGIN}`)
       expect(init?.headers).toEqual({
@@ -32,7 +32,7 @@ describe('SomaHttp', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  test('post encodes body and injects csrf token', async () => {
+  it('encodes the POST body and injects the CSRF token', async () => {
     const fetchMock = mock(async (_input: RequestInfo | URL, init?: RequestInit) => {
       expect(init?.method).toBe('POST')
       expect(init?.headers).toEqual({
@@ -53,7 +53,7 @@ describe('SomaHttp', () => {
     expect(html).toBe('<html>ok</html>')
   })
 
-  test('post surfaces alert errors from script tags with attributes', async () => {
+  it('surfaces alert() errors from script tags that have attributes', async () => {
     const fetchMock = mock(async () =>
       createResponse(
         `<html><head><title>빈페이지</title></head><body><script type='text/javascript'>alert('아이디 혹은 비밀번호가 일치 하지 않습니다.');location.href='/login';</script></body></html>`,
@@ -68,7 +68,7 @@ describe('SomaHttp', () => {
     )
   })
 
-  test('post surfaces alert errors followed by history.back()', async () => {
+  it('surfaces alert() errors that are followed by history.back()', async () => {
     const fetchMock = mock(async () =>
       createResponse(
         `<html><head></head><body><script language='JavaScript'>\nalert('잘못된 접근입니다.');\nhistory.back();\n</script></body></html>`,
@@ -81,7 +81,7 @@ describe('SomaHttp', () => {
     await expect(http.post('/mypage/test.do', {})).rejects.toThrow('잘못된 접근입니다.')
   })
 
-  test('post ignores alert() inside function bodies (form validation scripts)', async () => {
+  it('ignores alert() calls nested inside function bodies (form validation scripts)', async () => {
     const pageWithValidationScript = `<html><head><title>AI·SW마에스트로 서울</title></head><body>
       <ul class="bbs-reserve"><li class="item">room data</li></ul>
       <script>
@@ -106,7 +106,7 @@ describe('SomaHttp', () => {
   })
 
   describe('postMultipart', () => {
-    test('passes FormData to fetch', async () => {
+    it('passes the FormData instance through to fetch', async () => {
       const fetchMock = mock(async (_input: RequestInfo | URL, init?: RequestInit) => {
         expect(init?.body).toBeInstanceOf(FormData)
         return createResponse('<html>ok</html>')
@@ -118,7 +118,7 @@ describe('SomaHttp', () => {
       await expect(http.postMultipart('/test', new FormData())).resolves.toBe('<html>ok</html>')
     })
 
-    test('does not set Content-Type manually', async () => {
+    it('does not set the Content-Type header manually (lets fetch set the boundary)', async () => {
       const fetchMock = mock(async (_input: RequestInfo | URL, init?: RequestInit) => {
         expect(init?.headers).toEqual({
           'Accept-Language': 'ko,en-US;q=0.9,en;q=0.8',
@@ -139,7 +139,7 @@ describe('SomaHttp', () => {
       await http.postMultipart('/test', new FormData())
     })
 
-    test('appends csrf token to FormData', async () => {
+    it('appends the CSRF token to the FormData body', async () => {
       const fetchMock = mock(async (_input: RequestInfo | URL, init?: RequestInit) => {
         const body = init?.body
         expect(body).toBeInstanceOf(FormData)
@@ -153,7 +153,7 @@ describe('SomaHttp', () => {
       await http.postMultipart('/test', new FormData())
     })
 
-    test('follows redirects manually', async () => {
+    it('follows redirects manually after a multipart POST', async () => {
       const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input)
 
@@ -189,7 +189,7 @@ describe('SomaHttp', () => {
       expect(fetchMock).toHaveBeenCalledTimes(2)
     })
 
-    test('keeps existing post() behavior unchanged', async () => {
+    it('keeps the existing post() behavior unchanged', async () => {
       const fetchMock = mock(async (_input: RequestInfo | URL, init?: RequestInit) => {
         expect(init?.method).toBe('POST')
         expect(init?.headers).toEqual({
@@ -211,7 +211,7 @@ describe('SomaHttp', () => {
   })
 
   describe('postForm', () => {
-    test('converts Record to FormData and delegates to postMultipart', async () => {
+    it('converts a Record body to FormData and delegates to postMultipart', async () => {
       const fetchMock = mock(async (_input: RequestInfo | URL, init?: RequestInit) => {
         const body = init?.body
         expect(body).toBeInstanceOf(FormData)
@@ -230,7 +230,7 @@ describe('SomaHttp', () => {
       ).resolves.toBe('<html>ok</html>')
     })
 
-    test('does not set Content-Type header (lets FormData set multipart boundary)', async () => {
+    it('does not set the Content-Type header so FormData can set the multipart boundary', async () => {
       const fetchMock = mock(async (_input: RequestInfo | URL, init?: RequestInit) => {
         const headers = init?.headers as Record<string, string> | undefined
         expect(headers?.['Content-Type']).toBeUndefined()
@@ -245,7 +245,7 @@ describe('SomaHttp', () => {
     })
   })
 
-  test('postJson returns parsed json', async () => {
+  it('returns the parsed JSON body from postJson', async () => {
     const fetchMock = mock(async (_input: RequestInfo | URL, init?: RequestInit) => {
       expect(init?.headers).toEqual({
         'Accept-Language': 'ko,en-US;q=0.9,en;q=0.8',
@@ -267,7 +267,7 @@ describe('SomaHttp', () => {
     expect(json).toEqual({ resultCode: 'SUCCESS' })
   })
 
-  test('login fetches csrf token then posts credentials', async () => {
+  it('fetches the CSRF token before posting credentials during login', async () => {
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
 
@@ -309,7 +309,7 @@ describe('SomaHttp', () => {
     expect(http.getCsrfToken()).toBe('csrf-login')
   })
 
-  test('checkLogin returns user identity when logged in, null otherwise', async () => {
+  it('returns the user identity when logged in and null when not', async () => {
     const loggedInMock = mock(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       createResponse(
         JSON.stringify({
@@ -345,7 +345,7 @@ describe('SomaHttp', () => {
     await expect(new SomaHttp().checkLogin()).resolves.toBeNull()
   })
 
-  test('checkLogin returns null when the server redirects to login', async () => {
+  it('returns null from checkLogin when the server redirects to the login page', async () => {
     const fetchMock = mock(async () =>
       createResponse('', [], 'text/html', {
         status: 302,
@@ -357,7 +357,7 @@ describe('SomaHttp', () => {
     await expect(new SomaHttp({ sessionCookie: 'session-1' }).checkLogin()).resolves.toBeNull()
   })
 
-  test('checkLogin returns null when the server serves login html instead of json', async () => {
+  it('returns null from checkLogin when the server serves login HTML instead of JSON', async () => {
     const fetchMock = mock(async () =>
       createResponse(
         '<html><head><title>AI·SW마에스트로</title></head><body><form><input name="username"><input name="password"></form></body></html>',
@@ -368,7 +368,7 @@ describe('SomaHttp', () => {
     await expect(new SomaHttp({ sessionCookie: 'session-1' }).checkLogin()).resolves.toBeNull()
   })
 
-  test('logout calls logout endpoint', async () => {
+  it('calls the logout endpoint', async () => {
     const fetchMock = mock(async (input: RequestInfo | URL) => {
       expect(String(input)).toBe('https://www.swmaestro.ai/sw/member/user/logout.do')
       return createResponse('<html>bye</html>')
@@ -380,7 +380,7 @@ describe('SomaHttp', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  test('extractCsrfToken reads hidden input', async () => {
+  it('reads the CSRF token from a hidden input field', async () => {
     const fetchMock = mock(async () => createResponse('<input type="hidden" name="csrfToken" value="csrf-token">'))
     globalThis.fetch = fetchMock as typeof fetch
 
@@ -397,7 +397,7 @@ describe('SomaHttp', () => {
 
     const expiredMessage = '잘못된 접근입니다. 해당 세션을 전체 초기화 하였습니다.'
 
-    test('post throws AuthenticationError for session-expired alert', async () => {
+    it('throws AuthenticationError from post when alert indicates session expiry', async () => {
       const fetchMock = mock(async () => createResponse(sessionExpiredAlert(expiredMessage)))
       globalThis.fetch = fetchMock as typeof fetch
 
@@ -406,7 +406,7 @@ describe('SomaHttp', () => {
       await expect(http.post('/mypage/officeMng/list.do', { menuNo: '200058' })).rejects.toThrow(AuthenticationError)
     })
 
-    test('get throws AuthenticationError for session-expired alert', async () => {
+    it('throws AuthenticationError from get when alert indicates session expiry', async () => {
       const fetchMock = mock(async () => createResponse(sessionExpiredAlert(expiredMessage)))
       globalThis.fetch = fetchMock as typeof fetch
 
@@ -415,7 +415,7 @@ describe('SomaHttp', () => {
       await expect(http.get('/mypage/officeMng/list.do')).rejects.toThrow(AuthenticationError)
     })
 
-    test('postMultipart throws AuthenticationError for session-expired alert', async () => {
+    it('throws AuthenticationError from postMultipart when alert indicates session expiry', async () => {
       const fetchMock = mock(async () => createResponse(sessionExpiredAlert(expiredMessage)))
       globalThis.fetch = fetchMock as typeof fetch
 
@@ -424,7 +424,7 @@ describe('SomaHttp', () => {
       await expect(http.postMultipart('/mypage/test.do', new FormData())).rejects.toThrow(AuthenticationError)
     })
 
-    test('alert with 세션 + invalidation keyword variants are treated as auth error', async () => {
+    it('treats alerts containing "세션" plus an invalidation keyword as auth errors', async () => {
       const variants = ['세션이 만료되었습니다.', '해당 세션을 초기화하였습니다.', '세션 정보가 유효하지 않습니다.']
 
       for (const message of variants) {
@@ -436,7 +436,7 @@ describe('SomaHttp', () => {
       }
     })
 
-    test('alert containing 세션 without invalidation keyword is not treated as auth error', async () => {
+    it('does not treat an alert containing "세션" without an invalidation keyword as an auth error', async () => {
       const fetchMock = mock(async () => createResponse(sessionExpiredAlert('멘토링 세션이 이미 마감되었습니다.')))
       globalThis.fetch = fetchMock as typeof fetch
 
@@ -445,7 +445,7 @@ describe('SomaHttp', () => {
       await expect(http.post('/mypage/test.do', {})).rejects.toThrow('멘토링 세션이 이미 마감되었습니다.')
     })
 
-    test('non-session alert still throws regular Error', async () => {
+    it('throws a regular Error from post when the alert is unrelated to the session', async () => {
       const fetchMock = mock(async () => createResponse(sessionExpiredAlert('잘못된 접근입니다.')))
       globalThis.fetch = fetchMock as typeof fetch
 
@@ -454,7 +454,7 @@ describe('SomaHttp', () => {
       await expect(http.post('/mypage/test.do', {})).rejects.toThrow('잘못된 접근입니다.')
     })
 
-    test('get throws regular Error for non-session alert', async () => {
+    it('throws a regular Error from get when the alert is unrelated to the session', async () => {
       const fetchMock = mock(async () => createResponse(sessionExpiredAlert('잘못된 접근입니다.')))
       globalThis.fetch = fetchMock as typeof fetch
 
@@ -463,7 +463,7 @@ describe('SomaHttp', () => {
       await expect(http.get('/mypage/test.do')).rejects.toThrow('잘못된 접근입니다.')
     })
 
-    test('session-expired alert with double quotes is detected', async () => {
+    it('detects session-expired alerts that use double quotes', async () => {
       const doubleQuoteAlert = `<html><body><script language='JavaScript'>\nalert("${expiredMessage}");\nhistory.back();\n</script></body></html>`
       const fetchMock = mock(async () => createResponse(doubleQuoteAlert))
       globalThis.fetch = fetchMock as typeof fetch
@@ -480,7 +480,7 @@ describe('SomaHttp', () => {
     })
     const genericErrorJson = JSON.stringify({ error: '처리 중 오류가 발생했습니다.' })
 
-    test('post throws AuthenticationError for session-expired JSON', async () => {
+    it('throws AuthenticationError from post when the JSON response indicates session expiry', async () => {
       const fetchMock = mock(async () => createResponse(sessionExpiredJson, [], 'application/json'))
       globalThis.fetch = fetchMock as typeof fetch
 
@@ -489,7 +489,7 @@ describe('SomaHttp', () => {
       await expect(http.post('/mypage/officeMng/list.do', { menuNo: '200058' })).rejects.toThrow(AuthenticationError)
     })
 
-    test('post throws Error for non-session JSON error', async () => {
+    it('throws a regular Error from post for non-session JSON errors', async () => {
       const fetchMock = mock(async () => createResponse(genericErrorJson, [], 'application/json'))
       globalThis.fetch = fetchMock as typeof fetch
 
@@ -498,7 +498,7 @@ describe('SomaHttp', () => {
       await expect(http.post('/mypage/test.do', {})).rejects.toThrow('처리 중 오류가 발생했습니다.')
     })
 
-    test('postJson throws AuthenticationError for session-expired JSON', async () => {
+    it('throws AuthenticationError from postJson when the JSON response indicates session expiry', async () => {
       const fetchMock = mock(async () => createResponse(sessionExpiredJson, [], 'application/json'))
       globalThis.fetch = fetchMock as typeof fetch
 
@@ -509,7 +509,7 @@ describe('SomaHttp', () => {
       )
     })
 
-    test('postJson throws Error for non-session JSON error', async () => {
+    it('throws a regular Error from postJson for non-session JSON errors', async () => {
       const fetchMock = mock(async () => createResponse(genericErrorJson, [], 'application/json'))
       globalThis.fetch = fetchMock as typeof fetch
 
@@ -518,7 +518,7 @@ describe('SomaHttp', () => {
       await expect(http.postJson('/mypage/test.do', {})).rejects.toThrow('처리 중 오류가 발생했습니다.')
     })
 
-    test('postJson still parses valid JSON when no error field', async () => {
+    it('still parses valid JSON from postJson when no error field is present', async () => {
       const fetchMock = mock(async () =>
         createResponse(JSON.stringify({ resultCode: 'SUCCESS' }), [], 'application/json'),
       )
@@ -529,7 +529,7 @@ describe('SomaHttp', () => {
       await expect(http.postJson('/mypage/test.do', {})).resolves.toEqual({ resultCode: 'SUCCESS' })
     })
 
-    test('non-JSON body starting with { does not false-positive', async () => {
+    it('does not false-positive on non-JSON bodies that happen to start with "{"', async () => {
       const fetchMock = mock(async () => createResponse('{malformed json', [], 'text/html'))
       globalThis.fetch = fetchMock as typeof fetch
 
@@ -538,7 +538,7 @@ describe('SomaHttp', () => {
       await expect(http.get('/test')).resolves.toBe('{malformed json')
     })
 
-    test('JSON error with leading whitespace is still detected', async () => {
+    it('still detects JSON error responses that have leading whitespace', async () => {
       const paddedJson = `  \n  ${sessionExpiredJson}`
       const fetchMock = mock(async () => createResponse(paddedJson, [], 'application/json'))
       globalThis.fetch = fetchMock as typeof fetch
@@ -548,7 +548,7 @@ describe('SomaHttp', () => {
       await expect(http.post('/mypage/test.do', {})).rejects.toThrow(AuthenticationError)
     })
 
-    test('get throws Error for non-session JSON error', async () => {
+    it('throws a regular Error from get for non-session JSON errors', async () => {
       const fetchMock = mock(async () => createResponse(genericErrorJson, [], 'application/json'))
       globalThis.fetch = fetchMock as typeof fetch
 
@@ -557,7 +557,7 @@ describe('SomaHttp', () => {
       await expect(http.get('/mypage/test.do')).rejects.toThrow('처리 중 오류가 발생했습니다.')
     })
 
-    test('postJson throws AuthenticationError for HTML login page response', async () => {
+    it('throws AuthenticationError from postJson when the response is an HTML login page', async () => {
       const loginPageHtml =
         '<html><head><title>AI·SW마에스트로</title></head><body><form><input name="username"><input name="password"></form></body></html>'
       const fetchMock = mock(async () => createResponse(loginPageHtml))

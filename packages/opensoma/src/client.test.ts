@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, describe, expect, it, mock } from 'bun:test'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -14,7 +14,7 @@ afterEach(() => {
 })
 
 describe('SomaClient', () => {
-  test('constructor initializes SomaHttp with provided session state', () => {
+  it('initializes SomaHttp with the provided session state', () => {
     const client = new SomaClient({ sessionCookie: 'session-1', csrfToken: 'csrf-1' })
     const http = Reflect.get(client, 'http') as SomaHttp
 
@@ -22,7 +22,7 @@ describe('SomaClient', () => {
     expect(http.getCsrfToken()).toBe('csrf-1')
   })
 
-  test('mentoring list calls GET and parses list plus pagination', async () => {
+  it('lists mentoring sessions with parsed items and pagination', async () => {
     const client = new SomaClient()
     const calls: Array<{ method: string; path: string; data: Record<string, string> | undefined }> = []
     Reflect.set(client, 'http', {
@@ -51,7 +51,7 @@ describe('SomaClient', () => {
     expect(result.pagination).toEqual({ total: 1, currentPage: 1, totalPages: 1 })
   })
 
-  test('mentoring get calls detail endpoint and parser', async () => {
+  it('fetches a single mentoring session from the detail endpoint', async () => {
     const client = new SomaClient()
     let captured: { path: string; data: Record<string, string> | undefined } | undefined
     Reflect.set(client, 'http', {
@@ -71,7 +71,7 @@ describe('SomaClient', () => {
     expect(result).toMatchObject({ id: 99, title: '상세', venue: '온라인(Webex)' })
   })
 
-  test('mutating operations post expected payloads', async () => {
+  it('posts the expected payloads for create, update, delete, apply, cancel, reserve, and event apply', async () => {
     const mentoringDetailHtml =
       '<div class="group"><strong class="t">모집 명</strong><div class="c">[자유 멘토링] 기존 멘토링</div></div><div class="group"><strong class="t">접수 기간</strong><div class="c">2026.03.01 ~ 2026.03.15</div></div><div class="group"><strong class="t">강의날짜</strong><div class="c"><span>2026.03.20 10:00시 ~ 12:00시</span></div></div><div class="group"><strong class="t">장소</strong><div class="c">온라인(Webex)</div></div><div class="group"><strong class="t">모집인원</strong><div class="c">5명</div></div><div class="group"><strong class="t">작성자</strong><div class="c">전수열</div></div><div class="group"><strong class="t">등록일</strong><div class="c">2026.03.01</div></div><div class="cont"><p>기존 내용</p></div>'
     const client = new SomaClient()
@@ -166,7 +166,7 @@ describe('SomaClient', () => {
     })
   })
 
-  test('mentoring.update merges partial params with existing data', async () => {
+  it('merges partial update params with the existing mentoring data', async () => {
     const mentoringDetailHtml =
       '<div class="group"><strong class="t">모집 명</strong><div class="c">[멘토 특강] 웹 성능 특강</div></div><div class="group"><strong class="t">접수 기간</strong><div class="c">2026.04.01 ~ 2026.04.10</div></div><div class="group"><strong class="t">강의날짜</strong><div class="c"><span>2026.04.11 14:00시 ~ 15:30시</span></div></div><div class="group"><strong class="t">장소</strong><div class="c">온라인(Webex)</div></div><div class="group"><strong class="t">모집인원</strong><div class="c">20명</div></div><div class="group"><strong class="t">작성자</strong><div class="c">전수열</div></div><div class="group"><strong class="t">등록일</strong><div class="c">2026.04.01</div></div><div class="cont"><p>세션 본문</p></div>'
     const client = new SomaClient()
@@ -198,7 +198,7 @@ describe('SomaClient', () => {
     })
   })
 
-  test('room, dashboard, notice, team, member, event, and history routes use expected endpoints', async () => {
+  it('routes room, dashboard, notice, team, member, event, and history calls to the expected endpoints', async () => {
     const client = new SomaClient()
     const calls: Array<{ method: string; path: string; data: Record<string, string> | undefined }> = []
     Reflect.set(client, 'http', {
@@ -305,7 +305,7 @@ describe('SomaClient', () => {
     })
   })
 
-  test('login and isLoggedIn delegate to SomaHttp', async () => {
+  it('delegates login and isLoggedIn to SomaHttp', async () => {
     const client = new SomaClient({ username: 'neo@example.com', password: 'secret' })
     const calls: string[] = []
     Reflect.set(client, 'http', {
@@ -321,7 +321,7 @@ describe('SomaClient', () => {
     await expect(client.isLoggedIn()).resolves.toBe(true)
   })
 
-  test('auth-required operations re-login automatically when username/password are configured', async () => {
+  it('re-logs in automatically when username and password are configured', async () => {
     const client = new SomaClient({ username: 'neo@example.com', password: 'secret' })
     const calls: string[] = []
     let authChecks = 0
@@ -343,7 +343,7 @@ describe('SomaClient', () => {
     expect(calls).toEqual(['neo@example.com:secret'])
   })
 
-  test('saveCredentials persists the credentials used by login()', async () => {
+  it('persists the credentials used by login() when saveCredentials is called', async () => {
     const client = new SomaClient()
     const dir = await mkdtemp(join(tmpdir(), 'opensoma-client-save-'))
     const manager = new CredentialManager(dir)
@@ -367,7 +367,7 @@ describe('SomaClient', () => {
     await manager.remove()
   })
 
-  test('logout delegates to SomaHttp', async () => {
+  it('delegates logout to SomaHttp', async () => {
     const client = new SomaClient()
     const calls: string[] = []
     Reflect.set(client, 'http', {
@@ -381,7 +381,7 @@ describe('SomaClient', () => {
     expect(calls).toEqual(['logout'])
   })
 
-  test('auth-required operations throw AuthenticationError when not logged in', async () => {
+  it('throws AuthenticationError from every auth-required operation when not logged in', async () => {
     const client = new SomaClient()
     Reflect.set(client, 'http', {
       checkLogin: async () => null,
@@ -428,7 +428,7 @@ describe('SomaClient', () => {
     await expect(client.event.apply(1)).rejects.toBeInstanceOf(AuthenticationError)
   })
 
-  test('AuthenticationError has helpful message', async () => {
+  it('includes helpful login hints in the AuthenticationError message', async () => {
     const client = new SomaClient()
     Reflect.set(client, 'http', {
       checkLogin: async () => null,

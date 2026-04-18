@@ -1,11 +1,11 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, it } from 'bun:test'
 
 import { inspectStoredAuthStatus, resolveExtractedCredentials } from './auth'
 
 const noBrowserExtraction = async () => null
 
 describe('resolveExtractedCredentials', () => {
-  test('returns the first candidate that validates successfully', async () => {
+  it('returns the first candidate that validates successfully', async () => {
     const calls: string[] = []
 
     const credentials = await resolveExtractedCredentials(
@@ -32,7 +32,7 @@ describe('resolveExtractedCredentials', () => {
     expect(calls).toEqual(['check:stale-session', 'check:valid-session', 'csrf:valid-session'])
   })
 
-  test('returns null when every candidate is invalid or throws', async () => {
+  it('returns null when every candidate is invalid or throws', async () => {
     const credentials = await resolveExtractedCredentials(
       [
         { browser: 'Chrome', lastAccessUtc: 30, profile: 'Default', sessionCookie: 'stale-session' },
@@ -57,7 +57,7 @@ describe('resolveExtractedCredentials', () => {
 })
 
 describe('inspectStoredAuthStatus', () => {
-  test('clears stale credentials when both recovery methods fail', async () => {
+  it('clears stale credentials when both recovery methods fail', async () => {
     let removed = false
 
     const status = await inspectStoredAuthStatus(
@@ -90,7 +90,7 @@ describe('inspectStoredAuthStatus', () => {
     expect(removed).toBe(true)
   })
 
-  test('preserves credentials when session verification fails unexpectedly', async () => {
+  it('preserves credentials when session verification fails unexpectedly', async () => {
     let removed = false
 
     const status = await inspectStoredAuthStatus(
@@ -125,7 +125,7 @@ describe('inspectStoredAuthStatus', () => {
     expect(removed).toBe(false)
   })
 
-  test('recovers via browser extraction when no stored password is available', async () => {
+  it('recovers via browser extraction when no stored password is available', async () => {
     let savedCredentials: Record<string, unknown> | null = null
 
     const status = await inspectStoredAuthStatus(
@@ -160,7 +160,7 @@ describe('inspectStoredAuthStatus', () => {
     expect(savedCredentials).toHaveProperty('loggedInAt')
   })
 
-  test('refreshes the session automatically when encrypted login credentials are available', async () => {
+  it('refreshes the session automatically when stored username and password are available', async () => {
     let savedCredentials: Record<string, string> | null = null
 
     const status = await inspectStoredAuthStatus(

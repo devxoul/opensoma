@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, it } from 'bun:test'
 
 import {
   ApplicationHistoryItemSchema,
@@ -20,7 +20,7 @@ import {
 } from './types'
 
 describe('schemas', () => {
-  test('accept valid values', () => {
+  it('accepts valid values for every schema', () => {
     expect(
       MentoringListItemSchema.parse({
         id: 9572,
@@ -239,7 +239,7 @@ describe('schemas', () => {
     ).toBeDefined()
   })
 
-  test('reject invalid values', () => {
+  it('rejects invalid values for every schema', () => {
     expect(() => MentoringListItemSchema.parse({})).toThrow()
     expect(() => MentoringDetailSchema.parse({ content: 123 })).toThrow()
     expect(() => RoomCardSchema.parse({ itemId: '17' })).toThrow()

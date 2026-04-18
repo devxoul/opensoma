@@ -1,5 +1,5 @@
 import { Database } from 'bun:sqlite'
-import { afterEach, describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, it } from 'bun:test'
 import { execSync } from 'node:child_process'
 import { createCipheriv, pbkdf2Sync } from 'node:crypto'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
@@ -22,7 +22,7 @@ afterEach(() => {
 })
 
 describe('TokenExtractor', () => {
-  test('finds cookie databases for all browsers on macOS', async () => {
+  it('finds cookie databases for every supported browser on macOS', async () => {
     const home = await makeTempDir()
 
     for (const browser of BROWSERS) {
@@ -38,7 +38,7 @@ describe('TokenExtractor', () => {
     }
   })
 
-  test('finds cookie databases for all browsers on Linux', async () => {
+  it('finds cookie databases for every supported browser on Linux', async () => {
     const home = await makeTempDir()
 
     for (const browser of BROWSERS) {
@@ -51,12 +51,12 @@ describe('TokenExtractor', () => {
     expect(paths).toHaveLength(BROWSERS.length)
   })
 
-  test('returns null when no cookie databases exist', async () => {
+  it('returns null when no cookie databases exist', async () => {
     const extractor = new TokenExtractor('linux', await makeTempDir())
     expect(await extractor.extract()).toBeNull()
   })
 
-  test('extracts plaintext cookie value', async () => {
+  it('extracts a plaintext cookie value', async () => {
     const home = await makeTempDir()
     const dbPath = join(home, '.config', 'google-chrome', 'Default', 'Cookies')
     createCookieDbWithPlaintext(dbPath, 'my-session-id')
@@ -65,7 +65,7 @@ describe('TokenExtractor', () => {
     expect(await extractor.extract()).toEqual({ sessionCookie: 'my-session-id' })
   })
 
-  test('finds cookie databases across numbered browser profiles', async () => {
+  it('finds cookie databases across numbered browser profiles', async () => {
     const home = await makeTempDir()
     createCookieFile(join(home, '.config', 'google-chrome', 'Default', 'Cookies'))
     createCookieFile(join(home, '.config', 'google-chrome', 'Profile 1', 'Cookies'))
@@ -80,7 +80,7 @@ describe('TokenExtractor', () => {
     ])
   })
 
-  test('extractCandidates keeps the newest unique cookie across profiles', async () => {
+  it('keeps the newest unique cookie across profiles when collecting candidates', async () => {
     const home = await makeTempDir()
     createCookieDbWithPlaintext(join(home, '.config', 'google-chrome', 'Default', 'Cookies'), 'stale-session', 10)
     createCookieDbWithPlaintext(join(home, '.config', 'google-chrome', 'Profile 1', 'Cookies'), 'valid-session', 20)
@@ -104,7 +104,7 @@ describe('TokenExtractor', () => {
     ])
   })
 
-  test('extracts plaintext cookie from opensoma.dev host', async () => {
+  it('extracts a plaintext cookie from the opensoma.dev host', async () => {
     const home = await makeTempDir()
     const dbPath = join(home, '.config', 'google-chrome', 'Default', 'Cookies')
     createCookieDbWithPlaintext(dbPath, 'opensoma-dev-session', 0, 'opensoma.dev')
@@ -113,7 +113,7 @@ describe('TokenExtractor', () => {
     expect(await extractor.extract()).toEqual({ sessionCookie: 'opensoma-dev-session' })
   })
 
-  test('decrypts encrypted cookie from opensoma.dev host on Linux', async () => {
+  it('decrypts an encrypted cookie from the opensoma.dev host on Linux', async () => {
     const home = await makeTempDir()
     const dbPath = join(home, '.config', 'google-chrome', 'Default', 'Cookies')
     const encrypted = encryptLinuxCookie('opensoma-dev-encrypted')
@@ -123,7 +123,7 @@ describe('TokenExtractor', () => {
     expect(await extractor.extract()).toEqual({ sessionCookie: 'opensoma-dev-encrypted' })
   })
 
-  test('decrypts encrypted cookie on Linux', async () => {
+  it('decrypts an encrypted cookie on Linux', async () => {
     const home = await makeTempDir()
     const dbPath = join(home, '.config', 'google-chrome', 'Default', 'Cookies')
     const encrypted = encryptLinuxCookie('decrypted-session')
@@ -133,7 +133,7 @@ describe('TokenExtractor', () => {
     expect(await extractor.extract()).toEqual({ sessionCookie: 'decrypted-session' })
   })
 
-  test('extracts plaintext cookie under Node.js (compiled ESM)', async () => {
+  it('extracts a plaintext cookie when running under Node.js (compiled ESM)', async () => {
     execSync('bun run build', { cwd: join(import.meta.dir, '..'), stdio: 'pipe' })
     const home = await makeTempDir()
     const dbPath = join(home, '.config', 'google-chrome', 'Default', 'Cookies')
@@ -144,7 +144,7 @@ describe('TokenExtractor', () => {
     expect(JSON.parse(result.trim())).toEqual({ sessionCookie: 'node-test-session' })
   })
 
-  test('extracts encrypted cookie under Node.js (compiled ESM)', async () => {
+  it('extracts an encrypted cookie when running under Node.js (compiled ESM)', async () => {
     execSync('bun run build', { cwd: join(import.meta.dir, '..'), stdio: 'pipe' })
     const home = await makeTempDir()
     const dbPath = join(home, '.config', 'google-chrome', 'Default', 'Cookies')

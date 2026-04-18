@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, describe, expect, it, mock } from 'bun:test'
 
 import { TOZ_BASE_URL } from './constants'
 import { TozHttp } from './toz-http'
@@ -11,7 +11,7 @@ afterEach(() => {
 })
 
 describe('TozHttp', () => {
-  test('bootstrap GETs index.htm to seed JSESSIONID', async () => {
+  it('seeds JSESSIONID by GETting index.htm during bootstrap', async () => {
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe(`${TOZ_BASE_URL}/index.htm`)
       expect(init?.method).toBe('GET')
@@ -26,7 +26,7 @@ describe('TozHttp', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  test('bootstrap is no-op when JSESSIONID already set', async () => {
+  it('skips bootstrap when JSESSIONID is already set', async () => {
     const fetchMock = mock(async () => createResponse('ok'))
     globalThis.fetch = fetchMock as typeof fetch
 
@@ -37,7 +37,7 @@ describe('TozHttp', () => {
     expect(http.getSessionCookie()).toBe('EXISTING')
   })
 
-  test('post sends URL-encoded body with required headers and cookie', async () => {
+  it('sends URL-encoded POST bodies with the required headers and cookie', async () => {
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe(`${TOZ_BASE_URL}/ajaxGetEnableBoothes.htm`)
       expect(init?.method).toBe('POST')
@@ -65,7 +65,7 @@ describe('TozHttp', () => {
     expect(text).toBe('[]')
   })
 
-  test('postJson parses JSON response', async () => {
+  it('parses the JSON body returned by postJson', async () => {
     globalThis.fetch = mock(async () => createResponse('{"result":"SUCCESS","resultMsg":"abc"}')) as typeof fetch
 
     const http = new TozHttp({ sessionCookie: 'ABC' })
@@ -74,25 +74,25 @@ describe('TozHttp', () => {
     expect(json).toEqual({ result: 'SUCCESS', resultMsg: 'abc' })
   })
 
-  test('postText trims plain-text response', async () => {
+  it('trims the plain-text body returned by postText', async () => {
     globalThis.fetch = mock(async () => createResponse('SUCCESS\n')) as typeof fetch
 
     const http = new TozHttp({ sessionCookie: 'ABC' })
     expect(await http.postText('/ajaxHpVerify.htm', {})).toBe('SUCCESS')
   })
 
-  test('strips JSESSIONID= prefix when constructed with full cookie string', async () => {
+  it('strips the "JSESSIONID=" prefix when constructed with a full cookie string', async () => {
     const http = new TozHttp({ sessionCookie: 'JSESSIONID=XYZ789' })
     expect(http.getSessionCookie()).toBe('XYZ789')
     expect(http.getCookies()).toEqual({ JSESSIONID: 'XYZ789' })
   })
 
-  test('constructor with cookies map preserves all cookies', async () => {
+  it('preserves every cookie when constructed with a cookies map', async () => {
     const http = new TozHttp({ cookies: { JSESSIONID: 'A', other: 'B' } })
     expect(http.getCookies()).toEqual({ JSESSIONID: 'A', other: 'B' })
   })
 
-  test('throws on non-2xx response', async () => {
+  it('throws on a non-2xx response', async () => {
     globalThis.fetch = mock(async () =>
       createResponse('Server Error', [], 'text/html', { status: 500 }),
     ) as typeof fetch
@@ -101,7 +101,7 @@ describe('TozHttp', () => {
     await expect(http.get('/index.htm')).rejects.toThrow(/HTTP 500/)
   })
 
-  test('refuses to follow cross-origin redirects (no cookie leak)', async () => {
+  it('refuses to follow cross-origin redirects to prevent cookie leaks', async () => {
     globalThis.fetch = mock(async (input: RequestInfo | URL) => {
       const url = String(input)
       if (url.endsWith('/index.htm')) {
@@ -114,7 +114,7 @@ describe('TozHttp', () => {
     await expect(http.get('/index.htm')).rejects.toThrow(/cross-origin redirect/)
   })
 
-  test('follows same-origin redirects normally', async () => {
+  it('follows same-origin redirects normally', async () => {
     let hit = 0
     globalThis.fetch = mock(async (input: RequestInfo | URL) => {
       const url = String(input)

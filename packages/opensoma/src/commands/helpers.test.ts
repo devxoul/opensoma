@@ -1,11 +1,11 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, it } from 'bun:test'
 
 import { createAuthenticatedHttp } from './helpers'
 
 const noBrowserExtraction = async () => null
 
 describe('createAuthenticatedHttp', () => {
-  test('throws a login hint when no credentials are stored', async () => {
+  it('throws a login hint when no credentials are stored', async () => {
     const manager = {
       getCredentials: async () => null,
       remove: async () => {},
@@ -16,7 +16,7 @@ describe('createAuthenticatedHttp', () => {
     )
   })
 
-  test('clears stale credentials when both recovery methods fail', async () => {
+  it('clears stale credentials when both recovery methods fail', async () => {
     let removed = false
     const manager = {
       getCredentials: async () => ({
@@ -39,7 +39,7 @@ describe('createAuthenticatedHttp', () => {
     expect(removed).toBe(true)
   })
 
-  test('returns the authenticated http client when the session is valid', async () => {
+  it('returns the authenticated http client when the session is valid', async () => {
     const http = {
       checkLogin: async () => ({ userId: 'neo@example.com', userNm: '전수열' }),
       get: async () => '',
@@ -60,7 +60,7 @@ describe('createAuthenticatedHttp', () => {
     await expect(createAuthenticatedHttp(manager, () => http)).resolves.toBe(http)
   })
 
-  test('re-authenticates automatically when stored username/password are available', async () => {
+  it('re-authenticates automatically when stored username and password are available', async () => {
     let savedCredentials: Record<string, string> | null = null
     const manager = {
       getCredentials: async () => ({
@@ -110,7 +110,7 @@ describe('createAuthenticatedHttp', () => {
     })
   })
 
-  test('recovers via browser extraction when no stored password is available', async () => {
+  it('recovers via browser extraction when no stored password is available', async () => {
     let savedCredentials: Record<string, unknown> | null = null
     const manager = {
       getCredentials: async () => ({
@@ -146,7 +146,7 @@ describe('createAuthenticatedHttp', () => {
     expect(savedCredentials).toHaveProperty('loggedInAt')
   })
 
-  test('falls back to browser extraction when password re-login throws', async () => {
+  it('falls back to browser extraction when password re-login fails', async () => {
     let savedCredentials: Record<string, unknown> | null = null
     const manager = {
       getCredentials: async () => ({
@@ -190,7 +190,7 @@ describe('createAuthenticatedHttp', () => {
     })
   })
 
-  test('does not attempt browser extraction when no credentials exist', async () => {
+  it('skips browser extraction when no credentials exist', async () => {
     let browserExtractionCalled = false
     const manager = {
       getCredentials: async () => null,

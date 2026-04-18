@@ -1,44 +1,44 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, it } from 'bun:test'
 
 import { MENU_NO, REPORT_CD } from '../../constants'
 import { buildMentoringListParams, parseSearchQuery } from './mentoring-params'
 
 describe('parseSearchQuery', () => {
-  test('plain text defaults to title', () => {
+  it('defaults plain text to a title search', () => {
     expect(parseSearchQuery('OpenCode')).toEqual({ field: 'title', value: 'OpenCode' })
   })
 
-  test('title: prefix', () => {
+  it('parses the "title:" prefix as a title search', () => {
     expect(parseSearchQuery('title:OpenCode')).toEqual({ field: 'title', value: 'OpenCode' })
   })
 
-  test('author: prefix', () => {
+  it('parses the "author:" prefix as an author search', () => {
     expect(parseSearchQuery('author:전수열')).toEqual({ field: 'author', value: '전수열' })
   })
 
-  test('author:@me sets me flag', () => {
+  it('sets the "me" flag when parsing "author:@me"', () => {
     expect(parseSearchQuery('author:@me')).toEqual({ field: 'author', value: '@me', me: true })
   })
 
-  test('content: prefix', () => {
+  it('parses the "content:" prefix as a content search', () => {
     expect(parseSearchQuery('content:하네스')).toEqual({ field: 'content', value: '하네스' })
   })
 
-  test('unknown prefix treated as plain title search', () => {
+  it('treats an unknown prefix as a plain title search', () => {
     expect(parseSearchQuery('foo:bar')).toEqual({ field: 'title', value: 'foo:bar' })
   })
 
-  test('value with colons preserves everything after first colon', () => {
+  it('preserves everything after the first colon when the value contains colons', () => {
     expect(parseSearchQuery('title:foo:bar')).toEqual({ field: 'title', value: 'foo:bar' })
   })
 })
 
 describe('buildMentoringListParams', () => {
-  test('no options returns only menuNo', () => {
+  it('returns only menuNo when no options are passed', () => {
     expect(buildMentoringListParams()).toEqual({ menuNo: MENU_NO.MENTORING })
   })
 
-  test('status maps open to A, closed to C', () => {
+  it('maps status open to "A" and closed to "C"', () => {
     expect(buildMentoringListParams({ status: 'open' })).toEqual({
       menuNo: MENU_NO.MENTORING,
       searchStatMentolec: 'A',
@@ -49,7 +49,7 @@ describe('buildMentoringListParams', () => {
     })
   })
 
-  test('type maps public and lecture to report codes', () => {
+  it('maps type public and lecture to their report codes', () => {
     expect(buildMentoringListParams({ type: 'public' })).toEqual({
       menuNo: MENU_NO.MENTORING,
       searchGubunMentolec: REPORT_CD.PUBLIC_MENTORING,
@@ -60,7 +60,7 @@ describe('buildMentoringListParams', () => {
     })
   })
 
-  test('title search sets searchCnd=1', () => {
+  it('sets searchCnd=1 for a title search', () => {
     expect(buildMentoringListParams({ search: { field: 'title', value: 'OpenCode' } })).toEqual({
       menuNo: MENU_NO.MENTORING,
       searchCnd: '1',
@@ -68,7 +68,7 @@ describe('buildMentoringListParams', () => {
     })
   })
 
-  test('author search sets searchCnd=2', () => {
+  it('sets searchCnd=2 for an author search', () => {
     expect(buildMentoringListParams({ search: { field: 'author', value: '전수열' } })).toEqual({
       menuNo: MENU_NO.MENTORING,
       searchCnd: '2',
@@ -76,7 +76,7 @@ describe('buildMentoringListParams', () => {
     })
   })
 
-  test('author:@me with user sets searchId and userNm', () => {
+  it('sets searchId and searchWrd from the current user when "author:@me" is used', () => {
     expect(
       buildMentoringListParams({
         search: { field: 'author', value: '@me', me: true },
@@ -90,7 +90,7 @@ describe('buildMentoringListParams', () => {
     })
   })
 
-  test('search composes with status and type', () => {
+  it('composes search with status and type filters', () => {
     expect(
       buildMentoringListParams({
         status: 'open',
@@ -108,7 +108,7 @@ describe('buildMentoringListParams', () => {
     })
   })
 
-  test('page sets pageIndex', () => {
+  it('sets pageIndex from the page option', () => {
     expect(buildMentoringListParams({ page: 3 })).toEqual({
       menuNo: MENU_NO.MENTORING,
       pageIndex: '3',
