@@ -55,8 +55,9 @@ export async function createReport(_prevState: CreateReportState, formData: Form
     return { error: '내용은 최소 100자 이상 입력해야 합니다.' }
   }
 
-  const file = formData.get('evidenceFile') as File | null
-  if (!file || file.size === 0) {
+  const rawFiles = formData.getAll('evidenceFile') as File[]
+  const evidenceFiles = rawFiles.filter((f) => f instanceof File && f.size > 0)
+  if (evidenceFiles.length === 0) {
     return { error: '증빙 파일을 첨부해주세요.' }
   }
 
@@ -70,9 +71,12 @@ export async function createReport(_prevState: CreateReportState, formData: Form
 
   try {
     const client = await createClient()
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    const tempFileName = file.name
+    const fileEntries = await Promise.all(
+      evidenceFiles.map(async (f) => ({
+        buffer: Buffer.from(await f.arrayBuffer()),
+        name: f.name,
+      }))
+    )
 
     await client.report.create(
       {
@@ -94,8 +98,7 @@ export async function createReport(_prevState: CreateReportState, formData: Form
         nonAttendanceNames: nonAttendanceNames || undefined,
         etc: etc || undefined,
       },
-      buffer,
-      tempFileName,
+      fileEntries,
     )
   } catch (error) {
     if (error instanceof AuthenticationError) {

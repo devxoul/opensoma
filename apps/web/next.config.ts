@@ -6,7 +6,7 @@ import type { NextConfig } from 'next'
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const nextConfig: NextConfig = {
-  experimental: { externalDir: true },
+  experimental: { externalDir: true, serverActions: { bodySizeLimit: '10mb' } },
   outputFileTracingRoot: path.resolve(dirname, '../..'),
   serverExternalPackages: ['sanitize-html'],
   turbopack: {
