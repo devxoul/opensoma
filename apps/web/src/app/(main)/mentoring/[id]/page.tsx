@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import React from 'react'
 
@@ -6,7 +7,8 @@ import { Breadcrumb } from '@/components/breadcrumb'
 import { HtmlContent } from '@/components/html-content'
 import { StatusBadge } from '@/components/status-badge'
 import { requireAuth } from '@/lib/auth'
-import { Button } from '@/ui/button'
+import { allVenueItems } from '@/lib/venues'
+import { Button, buttonVariants } from '@/ui/button'
 import { Card, CardContent, CardHeader } from '@/ui/card'
 import { Separator } from '@/ui/separator'
 
@@ -42,6 +44,23 @@ export default async function MentoringDetailPage({ params }: PageProps) {
   const client = await requireAuth()
   const mentoring = await client.mentoring.get(mentoringId)
 
+  const activeApplicants = mentoring.applicants.filter((a) => a.status === '신청완료')
+  const reportType = mentoring.type === '멘토 특강' ? 'MRC020' : 'MRC010'
+  const progressDate = mentoring.sessionDate.replace(/\./g, '-')
+  const matchedVenue = allVenueItems.includes(mentoring.venue) ? mentoring.venue : ''
+  const reportParams = new URLSearchParams({
+    reportType,
+    progressDate,
+    progressStartTime: mentoring.sessionTime.start,
+    progressEndTime: mentoring.sessionTime.end,
+    subject: mentoring.title,
+  })
+  if (matchedVenue) reportParams.set('venue', matchedVenue)
+  if (activeApplicants.length > 0) {
+    reportParams.set('attendanceCount', String(activeApplicants.length))
+    reportParams.set('attendanceNames', activeApplicants.map((a) => a.name).join(', '))
+  }
+
   return (
     <div className="space-y-4">
       <Breadcrumb items={[{ label: '멘토링/특강', href: '/mentoring' }, { label: mentoring.title }]} />
@@ -53,11 +72,16 @@ export default async function MentoringDetailPage({ params }: PageProps) {
                 <StatusBadge status={mentoring.status} />
                 <span className="text-sm text-foreground-muted">{mentoring.type}</span>
               </div>
-              <form action={`/mentoring/${mentoring.id}/edit`}>
-                <Button type="submit" variant="secondary" size="sm">
-                  수정
-                </Button>
-              </form>
+              <div className="flex items-center gap-2">
+                <Link href={`/report/new?${reportParams}`} className={buttonVariants({ variant: 'primary', size: 'sm' })}>
+                  보고서 작성
+                </Link>
+                <form action={`/mentoring/${mentoring.id}/edit`}>
+                  <Button type="submit" variant="secondary" size="sm">
+                    수정
+                  </Button>
+                </form>
+              </div>
             </div>
             <div className="space-y-2">
               <h1 className="text-2xl font-bold text-foreground">{mentoring.title}</h1>

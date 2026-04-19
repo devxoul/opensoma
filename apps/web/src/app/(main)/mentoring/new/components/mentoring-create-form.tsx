@@ -14,6 +14,7 @@ import {
 import { addThirtyMinutes } from '@/app/(main)/room/lib/room-mentoring'
 import { RichTextEditor } from '@/components/rich-text-editor/editor'
 import type { RoomCard } from '@/lib/sdk'
+import { venues } from '@/lib/venues'
 import { Button } from '@/ui/button'
 import { Card, CardContent, CardHeader } from '@/ui/card'
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '@/ui/collapsible'
@@ -38,39 +39,6 @@ interface MentoringCreateFormProps {
 
 const initialState: { error: string } = { error: '' }
 
-const venues = [
-  {
-    group: '토즈 (외부)',
-    items: [
-      '광화문점',
-      '양재점',
-      '강남컨퍼런스센터점',
-      '건대점',
-      '강남역토즈타워점',
-      '선릉점',
-      '역삼점',
-      '홍대점',
-      '신촌비즈니스센터점',
-    ],
-  },
-  { group: '온라인', items: ['온라인(Webex)'] },
-  {
-    group: '소마 내부 (12층)',
-    items: [
-      '스페이스 A1',
-      '스페이스 A2',
-      '스페이스 A3',
-      '스페이스 A4',
-      '스페이스 A5',
-      '스페이스 A6',
-      '스페이스 A7',
-      '스페이스 A8',
-      '스페이스 M1',
-      '스페이스 M2',
-    ],
-  },
-  { group: '소마 내부 (7층)', items: ['스페이스 S'] },
-]
 
 const startTimes = createTimeRange(9, 0, 23, 0)
 const endTimes = [...createTimeRange(10, 0, 23, 30), '24:00']

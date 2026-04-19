@@ -1,8 +1,10 @@
 'use client'
 
 import { useActionState, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 import { createReport } from '@/app/(main)/report/new/actions'
+import { venues } from '@/lib/venues'
 import { Button } from '@/ui/button'
 import { Card, CardContent, CardHeader } from '@/ui/card'
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '@/ui/collapsible'
@@ -28,48 +30,16 @@ const regions = [
 const startTimes = createTimeRange(9, 0, 23, 0)
 const endTimes = [...createTimeRange(10, 0, 23, 30), '24:00']
 
-const venues = [
-  {
-    group: '토즈 (외부)',
-    items: [
-      '광화문점',
-      '양재점',
-      '강남컨퍼런스센터점',
-      '건대점',
-      '강남역토즈타워점',
-      '선릉점',
-      '역삼점',
-      '홍대점',
-      '신촌비즈니스센터점',
-    ],
-  },
-  { group: '온라인', items: ['온라인(Webex)'] },
-  {
-    group: '소마 내부 (12층)',
-    items: [
-      '스페이스 A1',
-      '스페이스 A2',
-      '스페이스 A3',
-      '스페이스 A4',
-      '스페이스 A5',
-      '스페이스 A6',
-      '스페이스 A7',
-      '스페이스 A8',
-      '스페이스 M1',
-      '스페이스 M2',
-    ],
-  },
-  { group: '소마 내부 (7층)', items: ['스페이스 S'] },
-]
 
 export function ReportCreateForm() {
+  const searchParams = useSearchParams()
   const [state, formAction, isPending] = useActionState(createReport, initialState)
-  const [reportType, setReportType] = useState('MRC010')
+  const [reportType, setReportType] = useState(searchParams.get('reportType') ?? 'MRC010')
   const [region, setRegion] = useState('S')
-  const [progressDate, setProgressDate] = useState('')
-  const [venue, setVenue] = useState('')
-  const [startTime, setStartTime] = useState('')
-  const [endTime, setEndTime] = useState('')
+  const [progressDate, setProgressDate] = useState(searchParams.get('progressDate') ?? '')
+  const [venue, setVenue] = useState(searchParams.get('venue') ?? '')
+  const [startTime, setStartTime] = useState(searchParams.get('progressStartTime') ?? '')
+  const [endTime, setEndTime] = useState(searchParams.get('progressEndTime') ?? '')
   const [exceptStartTime, setExceptStartTime] = useState('')
   const [exceptEndTime, setExceptEndTime] = useState('')
   const [fileName, setFileName] = useState('')
@@ -184,7 +154,7 @@ export function ReportCreateForm() {
             <div className="grid gap-6 md:grid-cols-2">
               <Field name="attendanceCount">
                 <FieldLabel>참석 인원</FieldLabel>
-                <Input name="attendanceCount" min={1} placeholder="예: 4" type="number" />
+                <Input name="attendanceCount" min={1} placeholder="예: 4" type="number" defaultValue={searchParams.get('attendanceCount') ?? ''} />
               </Field>
 
               <Field name="teamNames">
@@ -197,7 +167,7 @@ export function ReportCreateForm() {
             <Field name="attendanceNames">
               <FieldLabel>참석자 명단</FieldLabel>
               <FieldDescription>참석자 이름을 쉼표로 구분하여 입력하세요.</FieldDescription>
-              <Textarea name="attendanceNames" placeholder="예: 홍길동, 김철수, 이영희" rows={2} />
+              <Textarea name="attendanceNames" placeholder="예: 홍길동, 김철수, 이영희" rows={2} defaultValue={searchParams.get('attendanceNames') ?? ''} />
             </Field>
 
             <Field name="nonAttendanceNames">
@@ -253,7 +223,7 @@ export function ReportCreateForm() {
             <Field name="subject">
               <FieldLabel>주제</FieldLabel>
               <FieldDescription>최소 10자 이상 입력해야 합니다.</FieldDescription>
-              <Input name="subject" placeholder="멘토링 주제를 입력하세요" />
+              <Input name="subject" placeholder="멘토링 주제를 입력하세요" defaultValue={searchParams.get('subject') ?? ''} />
             </Field>
 
             <Field name="content">

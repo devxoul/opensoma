@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { ReportCreateForm } from '@/app/(main)/report/new/components/report-create-form'
 
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 }
 
 export default function ReportCreatePage() {
-  return <ReportCreateForm />
+  return (
+    <Suspense>
+      <ReportCreateForm />
+    </Suspense>
+  )
 }

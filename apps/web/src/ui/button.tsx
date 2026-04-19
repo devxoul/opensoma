@@ -15,6 +15,20 @@ const sizes = {
   md: 'px-4 py-2 text-sm h-11',
 } as const
 
+const base = 'inline-flex items-center justify-center rounded-lg font-semibold transition-[color,background-color,border-color] duration-150 focus:outline-none'
+
+export function buttonVariants({
+  variant = 'primary',
+  size = 'md',
+  className,
+}: {
+  variant?: keyof typeof variants
+  size?: keyof typeof sizes
+  className?: string
+} = {}) {
+  return cn(base, variants[variant], sizes[size], className)
+}
+
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: keyof typeof variants
   size?: keyof typeof sizes
@@ -25,7 +39,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       className={cn(
-        'inline-flex items-center justify-center rounded-lg font-semibold transition-[color,background-color,border-color] duration-150 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+        base,
+        'disabled:cursor-not-allowed disabled:opacity-50',
         variants[variant],
         sizes[size],
         className,
