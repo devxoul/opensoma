@@ -72,12 +72,21 @@ export function ReportCreateForm() {
   const [endTime, setEndTime] = useState('')
   const [exceptStartTime, setExceptStartTime] = useState('')
   const [exceptEndTime, setExceptEndTime] = useState('')
-  const [fileName, setFileName] = useState('')
+  const [files, setFiles] = useState<File[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    setFileName(file?.name ?? '')
+    setFiles(Array.from(e.target.files ?? []))
+  }
+
+  const handleRemoveFile = (index: number) => {
+    const updated = files.filter((_, i) => i !== index)
+    setFiles(updated)
+    if (fileInputRef.current) {
+      const dt = new DataTransfer()
+      for (const f of updated) dt.items.add(f)
+      fileInputRef.current.files = dt.files
+    }
   }
 
   return (
@@ -279,19 +288,42 @@ export function ReportCreateForm() {
             <Field name="evidenceFile">
               <FieldLabel>증빙 파일</FieldLabel>
               <FieldDescription>멘토링 증빙 파일을 첨부해주세요 (필수)</FieldDescription>
-              <div className="flex items-center gap-3">
-                <input
-                  ref={fileInputRef}
-                  accept="*/*"
-                  name="evidenceFile"
-                  onChange={handleFileChange}
-                  type="file"
-                  className="hidden"
-                />
-                <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()}>
-                  파일 선택
-                </Button>
-                <span className="text-sm text-foreground-muted">{fileName || '선택된 파일 없음'}</span>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <input
+                    ref={fileInputRef}
+                    accept="*/*"
+                    multiple
+                    name="evidenceFile"
+                    onChange={handleFileChange}
+                    type="file"
+                    className="hidden"
+                  />
+                  <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+                    파일 선택
+                  </Button>
+                  {files.length === 0 && (
+                    <span className="text-sm text-foreground-muted">선택된 파일 없음</span>
+                  )}
+                </div>
+                {files.length > 0 && (
+                  <ul className="space-y-1">
+                    {files.map((file, index) => (
+                      <li key={`${file.name}-${index}`} className="flex items-center gap-2 text-sm">
+                        <span className="text-foreground truncate max-w-xs">{file.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveFile(index)}
+                          aria-label={`${file.name} 삭제`}
+                        >
+                          ✕
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </Field>
 
